@@ -202,9 +202,9 @@ const DEFAULT_SETTINGS = extractDefaults(SETTINGS_SCHEMA);
  */
 class SettingsStore {
   /**
-     * コンストラクタ
-     * @param {Object} options - electron-storeのオプション
-     */
+   * コンストラクタ
+   * @param {Object} options - electron-storeのオプション
+   */
   constructor(options = {}) {
     // electron-store の初期化
     this.store = new Store({
@@ -221,7 +221,7 @@ class SettingsStore {
 
     // electron-storeの変更イベントをラップ
     this.store.onDidAnyChange((newValue, oldValue) => {
-      this.listeners.forEach(listener => {
+      this.listeners.forEach((listener) => {
         try {
           listener(newValue, oldValue);
         } catch (error) {
@@ -232,11 +232,11 @@ class SettingsStore {
   }
 
   /**
-     * 設定値を取得
-     * @param {string} key - 設定キー（ドット記法対応）
-     * @param {*} defaultValue - デフォルト値（オプション）
-     * @returns {*} 設定値
-     */
+   * 設定値を取得
+   * @param {string} key - 設定キー（ドット記法対応）
+   * @param {*} defaultValue - デフォルト値（オプション）
+   * @returns {*} 設定値
+   */
   get(key, defaultValue) {
     try {
       return this.store.get(key, defaultValue);
@@ -247,10 +247,10 @@ class SettingsStore {
   }
 
   /**
-     * 設定値を保存
-     * @param {string|Object} key - 設定キーまたは設定オブジェクト
-     * @param {*} value - 設定値（keyが文字列の場合）
-     */
+   * 設定値を保存
+   * @param {string|Object} key - 設定キーまたは設定オブジェクト
+   * @param {*} value - 設定値（keyが文字列の場合）
+   */
   set(key, value) {
     try {
       this.store.set(key, value);
@@ -261,9 +261,9 @@ class SettingsStore {
   }
 
   /**
-     * 設定値を削除
-     * @param {string} key - 設定キー
-     */
+   * 設定値を削除
+   * @param {string} key - 設定キー
+   */
   delete(key) {
     try {
       this.store.delete(key);
@@ -274,10 +274,10 @@ class SettingsStore {
   }
 
   /**
-     * 指定したキーが存在するかチェック
-     * @param {string} key - 設定キー
-     * @returns {boolean} 存在するかどうか
-     */
+   * 指定したキーが存在するかチェック
+   * @param {string} key - 設定キー
+   * @returns {boolean} 存在するかどうか
+   */
   has(key) {
     try {
       return this.store.has(key);
@@ -288,9 +288,9 @@ class SettingsStore {
   }
 
   /**
-     * 全ての設定を取得
-     * @returns {Object} 全設定オブジェクト
-     */
+   * 全ての設定を取得
+   * @returns {Object} 全設定オブジェクト
+   */
   getAll() {
     try {
       return this.store.store;
@@ -301,8 +301,8 @@ class SettingsStore {
   }
 
   /**
-     * 全ての設定をクリア（デフォルト値にリセット）
-     */
+   * 全ての設定をクリア（デフォルト値にリセット）
+   */
   clear() {
     try {
       this.store.clear();
@@ -315,9 +315,9 @@ class SettingsStore {
   }
 
   /**
-     * 設定をデフォルト値にリセット
-     * @param {string} key - リセットするキー（省略時は全設定）
-     */
+   * 設定をデフォルト値にリセット
+   * @param {string} key - リセットするキー（省略時は全設定）
+   */
   reset(key) {
     try {
       if (key) {
@@ -337,10 +337,10 @@ class SettingsStore {
   }
 
   /**
-     * デフォルト値を取得
-     * @param {string} key - 設定キー
-     * @returns {*} デフォルト値
-     */
+   * デフォルト値を取得
+   * @param {string} key - 設定キー
+   * @returns {*} デフォルト値
+   */
   getDefaultValue(key) {
     const keys = key.split('.');
     let current = DEFAULT_SETTINGS;
@@ -357,10 +357,10 @@ class SettingsStore {
   }
 
   /**
-     * 設定変更イベントリスナーを追加
-     * @param {Function} listener - リスナー関数
-     * @returns {Function} リスナー削除用関数
-     */
+   * 設定変更イベントリスナーを追加
+   * @param {Function} listener - リスナー関数
+   * @returns {Function} リスナー削除用関数
+   */
   onChange(listener) {
     if (typeof listener === 'function') {
       this.listeners.push(listener);
@@ -378,11 +378,11 @@ class SettingsStore {
   }
 
   /**
-     * 特定のキーの変更を監視
-     * @param {string} key - 監視するキー
-     * @param {Function} listener - リスナー関数
-     * @returns {Function} リスナー削除用関数
-     */
+   * 特定のキーの変更を監視
+   * @param {string} key - 監視するキー
+   * @param {Function} listener - リスナー関数
+   * @returns {Function} リスナー削除用関数
+   */
   onKeyChange(key, listener) {
     if (typeof listener !== 'function') {
       throw new Error('Listener must be a function');
@@ -401,11 +401,11 @@ class SettingsStore {
   }
 
   /**
-     * パスを使用してオブジェクトから値を取得
-     * @param {Object} obj - 対象オブジェクト
-     * @param {string} path - パス（ドット記法）
-     * @returns {*} 値
-     */
+   * パスを使用してオブジェクトから値を取得
+   * @param {Object} obj - 対象オブジェクト
+   * @param {string} path - パス（ドット記法）
+   * @returns {*} 値
+   */
   getValueByPath(obj, path) {
     if (!obj || typeof obj !== 'object') {
       return undefined;
@@ -426,11 +426,11 @@ class SettingsStore {
   }
 
   /**
-     * 設定の検証
-     * @param {string} key - 設定キー
-     * @param {*} value - 検証する値
-     * @returns {boolean} 有効な値かどうか
-     */
+   * 設定の検証
+   * @param {string} key - 設定キー
+   * @param {*} value - 検証する値
+   * @returns {boolean} 有効な値かどうか
+   */
   validate(key, value) {
     try {
       // 簡略化された検証ロジック
@@ -455,9 +455,9 @@ class SettingsStore {
   }
 
   /**
-     * 設定のエクスポート
-     * @returns {Object} エクスポートされた設定
-     */
+   * 設定のエクスポート
+   * @returns {Object} エクスポートされた設定
+   */
   export() {
     try {
       return {
@@ -472,10 +472,10 @@ class SettingsStore {
   }
 
   /**
-     * 設定のインポート
-     * @param {Object} data - インポートする設定データ
-     * @param {boolean} merge - 既存設定とマージするか（デフォルト: true）
-     */
+   * 設定のインポート
+   * @param {Object} data - インポートする設定データ
+   * @param {boolean} merge - 既存設定とマージするか（デフォルト: true）
+   */
   import(data, merge = true) {
     try {
       if (!data || !data.settings) {
@@ -499,24 +499,24 @@ class SettingsStore {
   }
 
   /**
-     * 設定ファイルパスを取得
-     * @returns {string} 設定ファイルのフルパス
-     */
+   * 設定ファイルパスを取得
+   * @returns {string} 設定ファイルのフルパス
+   */
   getStorePath() {
     return this.store.path;
   }
 
   /**
-     * 設定ストアのサイズを取得
-     * @returns {number} 設定項目数
-     */
+   * 設定ストアのサイズを取得
+   * @returns {number} 設定項目数
+   */
   size() {
     return this.store.size;
   }
 
   /**
-     * リソースのクリーンアップ
-     */
+   * リソースのクリーンアップ
+   */
   destroy() {
     try {
       // リスナーをクリア
