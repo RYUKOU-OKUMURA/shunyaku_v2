@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 /**
  * Preload script for Shunyaku v2
@@ -6,10 +6,15 @@ const { contextBridge } = require('electron');
  */
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  // IPC communication methods will be added here as needed
+  // IPC communication methods
   test: () => {
     // eslint-disable-next-line no-console
     console.log('ElectronAPI bridge is working');
     return 'Bridge connection successful';
   },
+
+  // HUD Window control methods
+  closeHUD: () => ipcRenderer.invoke('close-hud'),
+  hideHUD: () => ipcRenderer.invoke('hide-hud'),
+  showHUD: (options) => ipcRenderer.invoke('show-hud', options),
 });

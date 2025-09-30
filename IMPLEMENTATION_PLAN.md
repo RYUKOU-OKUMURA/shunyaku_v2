@@ -80,11 +80,11 @@ macOS上で「スクリーンショット → OCR → 翻訳 → HUD表示」を
 **検証条件**: `npm start` でElectronアプリが起動する
 
 #### タスク 1.2: HUDウィンドウの基本実装
-- [ ] 1.2.1 BrowserWindow生成（フレームレス、透過設定）
-- [ ] 1.2.2 hud.html作成（基本HTML構造）
-- [ ] 1.2.3 hud.css作成（スタイリング、透過対応）
-- [ ] 1.2.4 常時最前面設定（alwaysOnTop, level: 'floating'）
-- [ ] 1.2.5 固定テキスト表示テスト
+- [x] 1.2.1 BrowserWindow生成（フレームレス、透過設定）
+- [x] 1.2.2 hud.html作成（基本HTML構造）
+- [x] 1.2.3 hud.css作成（スタイリング、透過対応）
+- [x] 1.2.4 常時最前面設定（alwaysOnTop, level: 'floating'）
+- [x] 1.2.5 固定テキスト表示テスト
 
 **検証条件**: HUDウィンドウが最前面に透過表示される
 

@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const HUDWindowManager = require('./HUDWindowManager');
 
 /**
  * Shunyaku v2 - Main Process Entry Point
@@ -10,6 +11,7 @@ const path = require('path');
  */
 
 let mainWindow = null;
+let hudWindowManager = null;
 
 /**
  * メインアプリケーションウィンドウを作成
@@ -47,7 +49,7 @@ function createMainWindow() {
 /**
  * アプリケーションの初期化とウィンドウ作成
  */
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // macOS専用アプリとしてのDock動作設定
   if (process.platform === 'darwin') {
     // Dockにアイコンを表示（通常の動作）
@@ -55,7 +57,25 @@ app.whenReady().then(() => {
     app.dock.show();
   }
 
+  // HUDウィンドウマネージャーを初期化
+  hudWindowManager = new HUDWindowManager();
+
+  // IPC通信の設定
+  setupIPCHandlers();
+
   createMainWindow();
+
+  // テスト用：3秒後にHUDウィンドウを表示（固定テキスト表示テスト）
+  setTimeout(async () => {
+    try {
+      await hudWindowManager.showHUD();
+      // eslint-disable-next-line no-console
+      console.log('HUD window displayed for testing');
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to show HUD window:', error);
+    }
+  }, 3000);
 });
 
 /**
@@ -84,11 +104,40 @@ app.on('activate', () => {
 });
 
 /**
+ * IPC通信ハンドラーの設定
+ */
+function setupIPCHandlers() {
+  // HUDウィンドウを閉じる
+  ipcMain.handle('close-hud', () => {
+    if (hudWindowManager) {
+      hudWindowManager.closeHUD();
+    }
+  });
+
+  // HUDウィンドウを非表示にする
+  ipcMain.handle('hide-hud', () => {
+    if (hudWindowManager) {
+      hudWindowManager.hideHUD();
+    }
+  });
+
+  // HUDウィンドウを表示する
+  ipcMain.handle('show-hud', async (event, options) => {
+    if (hudWindowManager) {
+      await hudWindowManager.showHUD(options);
+    }
+  });
+}
+
+/**
  * アプリが終了する前の処理
  */
 app.on('before-quit', (_event) => {
-  // 必要に応じて設定の保存やクリーンアップ処理を実行
-  // 現在は基本実装なので何もしない
+  // HUDウィンドウのクリーンアップ
+  if (hudWindowManager) {
+    hudWindowManager.destroy();
+    hudWindowManager = null;
+  }
 });
 
 /**

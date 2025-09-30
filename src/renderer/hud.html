@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';"
+    />
+    <title>Shunyaku HUD</title>
+    <link rel="stylesheet" href="hud.css" />
+  </head>
+  <body>
+    <!-- HUDメインコンテナ -->
+    <div class="hud-container" id="hudContainer">
+      <!-- HUDヘッダー（ドラッグ可能エリア） -->
+      <div class="hud-header" id="hudHeader">
+        <div class="hud-title">
+          <span class="app-icon">🔄</span>
+          <span class="app-name">Shunyaku</span>
+        </div>
+        <div class="hud-controls">
+          <button class="control-btn minimize-btn" id="minimizeBtn" title="最小化">
+            <span class="btn-icon">−</span>
+          </button>
+          <button class="control-btn close-btn" id="closeBtn" title="閉じる">
+            <span class="btn-icon">×</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- HUDメインコンテンツ -->
+      <div class="hud-content" id="hudContent">
+        <!-- 固定テキスト表示エリア（Phase 1用） -->
+        <div class="text-display-area">
+          <div class="original-text-section">
+            <div class="text-label">原文:</div>
+            <div class="text-content" id="originalText">
+              Hello World! This is a sample text for testing HUD display.
+            </div>
+          </div>
+
+          <div class="translation-text-section">
+            <div class="text-label">翻訳:</div>
+            <div class="text-content" id="translatedText">
+              こんにちは世界！これはHUD表示をテストするためのサンプルテキストです。
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作ボタンエリア -->
+        <div class="action-buttons">
+          <button class="action-btn copy-btn" id="copyBtn" title="翻訳文をコピー">
+            <span class="btn-icon">📋</span>
+            <span class="btn-text">コピー</span>
+          </button>
+          <button class="action-btn refresh-btn" id="refreshBtn" title="再翻訳">
+            <span class="btn-icon">🔄</span>
+            <span class="btn-text">再翻訳</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ステータスバー -->
+      <div class="hud-status" id="hudStatus">
+        <div class="status-info">
+          <span class="status-text" id="statusText">準備完了</span>
+        </div>
+        <div class="status-indicator">
+          <div class="indicator-dot ready" id="statusIndicator"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD操作用のJavaScript -->
+    <script src="hud.js"></script>
+  </body>
+</html>
