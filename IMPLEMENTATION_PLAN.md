@@ -60,10 +60,10 @@ macOS上で「スクリーンショット → OCR → 翻訳 → HUD表示」を
 **検証条件**: `npm run lint` が実行可能
 
 #### タスク 0.3: 証明書とApple Developer確認
-- [ ] 0.3.1 Apple Developer Program登録確認
-- [ ] 0.3.2 Developer ID証明書の取得状況確認
-- [ ] 0.3.3 証明書の有効期限確認
-- [ ] 0.3.4 署名手順のドキュメント化（docs/signing.md）
+- [x] 0.3.1 Apple Developer Program登録確認
+- [x] 0.3.2 Developer ID証明書の取得状況確認
+- [x] 0.3.3 証明書の有効期限確認
+- [x] 0.3.4 署名手順のドキュメント化（docs/signing.md）
 
 **検証条件**: 証明書情報が確認できる
 
