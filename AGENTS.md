@@ -1,4 +1,4 @@
-# AGENT.md - Shunyaku v2 開発実行ガイド
+# AGENTS.md - Shunyaku v2 開発実行ガイド
 
 最終更新: 2025-09-30  
 対象: AIエージェント（開発実行担当）  
