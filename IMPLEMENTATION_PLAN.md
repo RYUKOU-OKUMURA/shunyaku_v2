@@ -52,10 +52,10 @@ macOS上で「スクリーンショット → OCR → 翻訳 → HUD表示」を
 **検証条件**: `npm test` が正常実行される
 
 #### タスク 0.2: コード品質ツール設定
-- [ ] 0.2.1 ESLintインストールと設定ファイル作成
-- [ ] 0.2.2 Prettierインストールと設定
-- [ ] 0.2.3 pre-commitフック設定（husky）
-- [ ] 0.2.4 package.jsonにlint/formatスクリプト追加
+- [x] 0.2.1 ESLintインストールと設定ファイル作成
+- [x] 0.2.2 Prettierインストールと設定
+- [x] 0.2.3 pre-commitフック設定（husky）
+- [x] 0.2.4 package.jsonにlint/formatスクリプト追加
 
 **検証条件**: `npm run lint` が実行可能
 

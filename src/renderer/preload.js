@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge } = require('electron');
 
 /**
  * Preload script for Shunyaku v2
@@ -10,5 +10,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   test: () => {
     console.log('ElectronAPI bridge is working');
     return 'Bridge connection successful';
-  }
+  },
 });

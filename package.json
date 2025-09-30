@@ -7,8 +7,12 @@
     "start": "electron .",
     "test": "jest",
     "lint": "eslint src/ --ext .js",
+    "lint:fix": "eslint src/ --ext .js --fix",
     "format": "prettier --write src/",
-    "dev": "electron . --dev"
+    "format:check": "prettier --check src/",
+    "dev": "electron . --dev",
+    "prepare": "husky install",
+    "precommit": "npm run lint:fix && npm run format"
   },
   "keywords": [
     "electron",
