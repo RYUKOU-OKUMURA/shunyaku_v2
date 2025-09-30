@@ -8,6 +8,7 @@ const { contextBridge } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   // IPC communication methods will be added here as needed
   test: () => {
+    // eslint-disable-next-line no-console
     console.log('ElectronAPI bridge is working');
     return 'Bridge connection successful';
   },

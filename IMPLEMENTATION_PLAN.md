@@ -72,10 +72,10 @@ macOS上で「スクリーンショット → OCR → 翻訳 → HUD表示」を
 ### Phase 1: 静的HUDウィンドウ（Week 1: 6-7日目）
 
 #### タスク 1.1: 基本Electronアプリ構造
-- [ ] 1.1.1 main.js作成（アプリエントリーポイント）
-- [ ] 1.1.2 package.jsonのmainフィールド設定
-- [ ] 1.1.3 アプリ起動とquit処理実装
-- [ ] 1.1.4 macOS特有のアプリ動作実装（dock表示制御）
+- [x] 1.1.1 main.js作成（アプリエントリーポイント）
+- [x] 1.1.2 package.jsonのmainフィールド設定
+- [x] 1.1.3 アプリ起動とquit処理実装
+- [x] 1.1.4 macOS特有のアプリ動作実装（dock表示制御）
 
 **検証条件**: `npm start` でElectronアプリが起動する
 
