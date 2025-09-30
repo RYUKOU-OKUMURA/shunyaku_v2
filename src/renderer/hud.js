@@ -49,10 +49,20 @@
       elements.refreshBtn.addEventListener('click', refreshTranslation);
     }
 
-    // Escキーで閉じる
+    // Escキーで閉じる（タスク1.3.3）
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
         closeHUD();
+      }
+    });
+
+    // Escキー処理の確実性のため、keyupイベントも追加
+    document.addEventListener('keyup', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
       }
     });
 
@@ -102,13 +112,24 @@
     });
   }
 
-  // HUDを閉じる
+  // HUDを閉じる（タスク1.3.2）
   function closeHUD() {
     updateStatus('closing', '終了中...');
 
     // Electronメインプロセスに閉じる要求を送信
     if (window.electronAPI && window.electronAPI.closeHUD) {
-      window.electronAPI.closeHUD();
+      window.electronAPI
+        .closeHUD()
+        .then(() => {
+          // eslint-disable-next-line no-console
+          console.log('HUD closed successfully');
+        })
+        .catch((error) => {
+          // eslint-disable-next-line no-console
+          console.error('Failed to close HUD:', error);
+          // フォールバック: 直接ウィンドウを閉じる
+          window.close();
+        });
     } else {
       // フォールバック: ウィンドウを閉じる
       window.close();

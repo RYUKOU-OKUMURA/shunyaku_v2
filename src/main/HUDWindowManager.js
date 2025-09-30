@@ -40,6 +40,7 @@ class HUDWindowManager {
       closable: true, // 閉じるボタン（カスタムUI）
       focusable: true, // フォーカス可能
       hasShadow: false, // ドロップシャドウ無効
+      movable: true, // ドラッグ移動を有効化（タスク1.3.1）
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -63,6 +64,9 @@ class HUDWindowManager {
 
     // ウィンドウイベントハンドラーの設定
     this.setupWindowEventHandlers();
+
+    // ドラッグ動作の最適化（タスク1.3.1）
+    this.setupDragBehavior();
 
     return this.hudWindow;
   }
@@ -195,6 +199,121 @@ class HUDWindowManager {
    */
   getHUDWindow() {
     return this.hudWindow;
+  }
+
+  /**
+   * ドラッグ動作の最適化設定（タスク1.3.1）
+   * macOS特有のドラッグ体験を向上させる
+   *
+   * @private
+   */
+  setupDragBehavior() {
+    if (!this.hudWindow || process.platform !== 'darwin') {
+      return;
+    }
+
+    // ドラッグ開始時の処理
+    this.hudWindow.on('move', () => {
+      // ウィンドウ移動中の処理（必要に応じて）
+      // 画面外への移動制限などを後で実装予定
+    });
+
+    // ドラッグ終了時の処理
+    this.hudWindow.on('moved', () => {
+      // 画面境界のスナップ機能を後で実装予定
+      this.validateWindowPosition();
+    });
+  }
+
+  /**
+   * ウィンドウ位置の妥当性チェック（タスク1.3.1補助機能）
+   * 画面外に移動しすぎた場合の調整
+   *
+   * @private
+   */
+  validateWindowPosition() {
+    if (!this.hudWindow || this.hudWindow.isDestroyed()) {
+      return;
+    }
+
+    const { screen } = require('electron');
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+    const [x, y] = this.hudWindow.getPosition();
+    const [windowWidth, windowHeight] = this.hudWindow.getSize();
+
+    let newX = x;
+    let newY = y;
+
+    // 画面左端からはみ出した場合
+    if (x < -windowWidth + 50) {
+      newX = -windowWidth + 50;
+    }
+
+    // 画面右端からはみ出した場合
+    if (x > screenWidth - 50) {
+      newX = screenWidth - 50;
+    }
+
+    // 画面上端からはみ出した場合
+    if (y < 0) {
+      newY = 0;
+    }
+
+    // 画面下端からはみ出した場合（windowHeightを使用）
+    if (y > screenHeight - windowHeight) {
+      newY = screenHeight - windowHeight;
+    }
+
+    // 位置を修正する必要がある場合のみ移動
+    if (newX !== x || newY !== y) {
+      this.hudWindow.setPosition(newX, newY);
+    }
+  }
+
+  /**
+   * マウス位置近傍にHUDウィンドウを表示（タスク1.3.4）
+   *
+   * @param {Object} mousePosition - マウス座標
+   * @param {number} mousePosition.x - マウスX座標
+   * @param {number} mousePosition.y - マウスY座標
+   * @returns {Promise<void>}
+   */
+  async showHUDNearMouse(mousePosition) {
+    if (!this.hudWindow || this.hudWindow.isDestroyed()) {
+      await this.createHUDWindow();
+    }
+
+    const [windowWidth, windowHeight] = this.hudWindow.getSize();
+    const { screen } = require('electron');
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+
+    // マウス位置からのオフセット（右下に少し離して表示）
+    const offsetX = 20;
+    const offsetY = 20;
+
+    let x = mousePosition.x + offsetX;
+    let y = mousePosition.y + offsetY;
+
+    // 画面境界チェックと調整
+    if (x + windowWidth > screenWidth) {
+      x = mousePosition.x - windowWidth - offsetX; // 左側に表示
+    }
+
+    if (y + windowHeight > screenHeight) {
+      y = mousePosition.y - windowHeight - offsetY; // 上側に表示
+    }
+
+    // 最小境界チェック
+    x = Math.max(0, x);
+    y = Math.max(0, y);
+
+    // ウィンドウ位置を設定して表示
+    this.hudWindow.setPosition(Math.floor(x), Math.floor(y));
+    this.hudWindow.show();
+    this.hudWindow.focus();
+    this.isVisible = true;
   }
 
   /**

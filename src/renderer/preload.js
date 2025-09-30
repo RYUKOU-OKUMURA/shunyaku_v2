@@ -17,4 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeHUD: () => ipcRenderer.invoke('close-hud'),
   hideHUD: () => ipcRenderer.invoke('hide-hud'),
   showHUD: (options) => ipcRenderer.invoke('show-hud', options),
+
+  // マウス位置近傍表示（タスク1.3.4）
+  showHUDNearMouse: () => ipcRenderer.invoke('show-hud-near-mouse'),
+  getCursorPosition: () => ipcRenderer.invoke('get-cursor-position'),
 });

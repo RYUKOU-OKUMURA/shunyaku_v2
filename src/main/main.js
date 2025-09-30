@@ -65,12 +65,14 @@ app.whenReady().then(async () => {
 
   createMainWindow();
 
-  // テスト用：3秒後にHUDウィンドウを表示（固定テキスト表示テスト）
+  // テスト用：3秒後にHUDウィンドウをマウス位置近傍に表示（タスク1.3検証）
   setTimeout(async () => {
     try {
-      await hudWindowManager.showHUD();
+      const { screen } = require('electron');
+      const mousePosition = screen.getCursorScreenPoint();
+      await hudWindowManager.showHUDNearMouse(mousePosition);
       // eslint-disable-next-line no-console
-      console.log('HUD window displayed for testing');
+      console.log(`HUD window displayed near mouse at (${mousePosition.x}, ${mousePosition.y})`);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to show HUD window:', error);
@@ -126,6 +128,21 @@ function setupIPCHandlers() {
     if (hudWindowManager) {
       await hudWindowManager.showHUD(options);
     }
+  });
+
+  // HUDウィンドウをマウス位置近傍に表示する（タスク1.3.4）
+  ipcMain.handle('show-hud-near-mouse', async () => {
+    if (hudWindowManager) {
+      const { screen } = require('electron');
+      const mousePosition = screen.getCursorScreenPoint();
+      await hudWindowManager.showHUDNearMouse(mousePosition);
+    }
+  });
+
+  // 現在のマウス位置を取得（タスク1.3.4補助）
+  ipcMain.handle('get-cursor-position', () => {
+    const { screen } = require('electron');
+    return screen.getCursorScreenPoint();
   });
 }
 
