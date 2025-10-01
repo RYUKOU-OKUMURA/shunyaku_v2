@@ -433,6 +433,97 @@ function setupIPCHandlers() {
       throw error;
     }
   });
+
+  // 手動テキスト翻訳（タスク2.5.3）
+  ipcMain.handle('translate-text', async (event, { text, targetLanguage, sourceLanguage = null }) => {
+    try {
+      // TranslationServiceが初期化されているかチェック
+      if (!translationService.isInitialized()) {
+        const initSuccess = await translationService.initialize();
+        if (!initSuccess) {
+          throw new Error('翻訳サービスの初期化に失敗しました。APIキーを確認してください。');
+        }
+      }
+
+      // 翻訳実行
+      const result = await translationService.translate(text, targetLanguage, sourceLanguage);
+
+      return {
+        success: true,
+        result: result,
+      };
+    } catch (error) {
+      console.error('Translation failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        errorType: getTranslationErrorType(error),
+      };
+    }
+  });
+
+  // 翻訳設定の取得
+  ipcMain.handle('get-translation-settings', async () => {
+    try {
+      return settingsStore.getTranslationSettings();
+    } catch (error) {
+      console.error('Failed to get translation settings:', error);
+      throw error;
+    }
+  });
+
+  // 翻訳設定の保存
+  ipcMain.handle('set-translation-settings', async (event, settings) => {
+    try {
+      settingsStore.setTranslationSettings(settings);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to save translation settings:', error);
+      throw error;
+    }
+  });
+
+  // 翻訳サービスの状態確認
+  ipcMain.handle('check-translation-service', async () => {
+    try {
+      const healthCheck = await translationService.healthCheck();
+      return {
+        success: true,
+        status: healthCheck,
+      };
+    } catch (error) {
+      console.error('Translation service health check failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        status: {
+          status: 'unhealthy',
+          errors: [error.message],
+        },
+      };
+    }
+  });
+}
+
+/**
+ * 翻訳エラーの種別を判定する
+ * @param {Error} error エラーオブジェクト
+ * @returns {string} エラー種別
+ */
+function getTranslationErrorType(error) {
+  const message = error.message?.toLowerCase() || '';
+
+  if (message.includes('api key') || message.includes('keychain') || message.includes('401') || message.includes('403')) {
+    return 'api_key';
+  } else if (message.includes('429') || message.includes('quota') || message.includes('limit')) {
+    return 'quota_exceeded';
+  } else if (message.includes('network') || message.includes('timeout') || message.includes('connection')) {
+    return 'network';
+  } else if (message.includes('invalid') || message.includes('validation')) {
+    return 'validation';
+  } else {
+    return 'unknown';
+  }
 }
 
 /**

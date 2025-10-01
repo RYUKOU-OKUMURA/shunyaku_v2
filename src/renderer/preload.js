@@ -21,4 +21,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // マウス位置近傍表示（タスク1.3.4）
   showHUDNearMouse: () => ipcRenderer.invoke('show-hud-near-mouse'),
   getCursorPosition: () => ipcRenderer.invoke('get-cursor-position'),
+
+  // 翻訳機能（タスク2.5.3）
+  translateText: (text, targetLanguage, sourceLanguage = null) =>
+    ipcRenderer.invoke('translate-text', { text, targetLanguage, sourceLanguage }),
+
+  // 翻訳設定管理
+  getTranslationSettings: () => ipcRenderer.invoke('get-translation-settings'),
+  setTranslationSettings: (settings) => ipcRenderer.invoke('set-translation-settings', settings),
+
+  // DeepL API状態確認
+  checkTranslationService: () => ipcRenderer.invoke('check-translation-service'),
 });
