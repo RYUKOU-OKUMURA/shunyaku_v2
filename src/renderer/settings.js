@@ -11,8 +11,8 @@ class SettingsManager {
   }
 
   /**
-     * Initialize the settings manager
-     */
+   * Initialize the settings manager
+   */
   init() {
     this.cacheElements();
     this.attachEventListeners();
@@ -21,8 +21,8 @@ class SettingsManager {
   }
 
   /**
-     * Cache DOM elements for performance
-     */
+   * Cache DOM elements for performance
+   */
   cacheElements() {
     this.elements = {
       // API Key elements
@@ -49,8 +49,8 @@ class SettingsManager {
   }
 
   /**
-     * Attach event listeners to DOM elements
-     */
+   * Attach event listeners to DOM elements
+   */
   attachEventListeners() {
     // API Key input validation
     this.elements.apiKeyInput.addEventListener('input', () => {
@@ -113,8 +113,8 @@ class SettingsManager {
   }
 
   /**
-     * Load current settings from main process
-     */
+   * Load current settings from main process
+   */
   async loadSettings() {
     try {
       this.showLoading(true, 'Loading settings...');
@@ -139,8 +139,8 @@ class SettingsManager {
   }
 
   /**
-     * Update UI elements with current settings
-     */
+   * Update UI elements with current settings
+   */
   updateUI(settings, hasApiKey) {
     // Update language settings
     if (settings.translation) {
@@ -157,8 +157,8 @@ class SettingsManager {
   }
 
   /**
-     * Validate DeepL API key format
-     */
+   * Validate DeepL API key format
+   */
   validateAPIKey() {
     const apiKey = this.elements.apiKeyInput.value.trim();
     const validationEl = this.elements.apiKeyValidation;
@@ -171,7 +171,8 @@ class SettingsManager {
     }
 
     // DeepL API key format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx
-    const deepLPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}:fx$/;
+    const deepLPattern =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}:fx$/;
 
     if (deepLPattern.test(apiKey)) {
       validationEl.textContent = '✓ Valid DeepL API key format';
@@ -179,7 +180,8 @@ class SettingsManager {
       this.elements.testApiBtn.disabled = false;
       return true;
     } else {
-      validationEl.textContent = '⚠ Invalid API key format. Expected: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx';
+      validationEl.textContent =
+        '⚠ Invalid API key format. Expected: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx';
       validationEl.className = 'validation-message error';
       this.elements.testApiBtn.disabled = true;
       return false;
@@ -187,8 +189,8 @@ class SettingsManager {
   }
 
   /**
-     * Toggle API key input visibility
-     */
+   * Toggle API key input visibility
+   */
   toggleAPIKeyVisibility() {
     const input = this.elements.apiKeyInput;
     const btn = this.elements.toggleApiKeyBtn;
@@ -205,8 +207,8 @@ class SettingsManager {
   }
 
   /**
-     * Test API connection with current key
-     */
+   * Test API connection with current key
+   */
   async testAPIConnection() {
     const apiKey = this.elements.apiKeyInput.value.trim();
 
@@ -238,8 +240,8 @@ class SettingsManager {
   }
 
   /**
-     * Save all settings including API key
-     */
+   * Save all settings including API key
+   */
   async saveSettings() {
     try {
       this.showLoading(true, 'Saving settings...');
@@ -270,7 +272,6 @@ class SettingsManager {
 
       this.currentSettings = settings;
       this.showMessage('✓ Settings saved successfully!', 'success');
-
     } catch (error) {
       console.error('Failed to save settings:', error);
       this.showMessage(`Failed to save settings: ${error.message}`, 'error');
@@ -280,8 +281,8 @@ class SettingsManager {
   }
 
   /**
-     * Reset all settings to default values
-     */
+   * Reset all settings to default values
+   */
   async resetSettings() {
     if (!confirm('Are you sure you want to reset all settings to default values?')) {
       return;
@@ -309,7 +310,6 @@ class SettingsManager {
 
       this.currentSettings = defaultSettings;
       this.showMessage('✓ Settings reset to defaults', 'success');
-
     } catch (error) {
       console.error('Failed to reset settings:', error);
       this.showMessage(`Failed to reset settings: ${error.message}`, 'error');
@@ -319,10 +319,12 @@ class SettingsManager {
   }
 
   /**
-     * Delete stored API key
-     */
+   * Delete stored API key
+   */
   async deleteAPIKey() {
-    if (!confirm('Are you sure you want to delete the stored API key? This action cannot be undone.')) {
+    if (
+      !confirm('Are you sure you want to delete the stored API key? This action cannot be undone.')
+    ) {
       return;
     }
 
@@ -336,7 +338,6 @@ class SettingsManager {
       this.elements.deleteApiKeyBtn.disabled = true;
 
       this.showMessage('✓ API key deleted successfully', 'success');
-
     } catch (error) {
       console.error('Failed to delete API key:', error);
       this.showMessage(`Failed to delete API key: ${error.message}`, 'error');
@@ -346,8 +347,8 @@ class SettingsManager {
   }
 
   /**
-     * Check current API key status
-     */
+   * Check current API key status
+   */
   async checkAPIKeyStatus() {
     try {
       const hasApiKey = await window.electronAPI.hasAPIKey('deepl');
@@ -355,7 +356,6 @@ class SettingsManager {
 
       this.elements.testApiBtn.disabled = !hasApiKey;
       this.elements.deleteApiKeyBtn.disabled = !hasApiKey;
-
     } catch (error) {
       console.error('Failed to check API key status:', error);
       this.updateAPIKeyStatus(false, 'Status check failed');
@@ -363,8 +363,8 @@ class SettingsManager {
   }
 
   /**
-     * Update API key status indicator
-     */
+   * Update API key status indicator
+   */
   updateAPIKeyStatus(hasKey, statusText = null) {
     const statusEl = this.elements.apiKeyStatus;
     const iconEl = statusEl.querySelector('.status-icon');
@@ -382,8 +382,8 @@ class SettingsManager {
   }
 
   /**
-     * Handle settings changes
-     */
+   * Handle settings changes
+   */
   onSettingsChange() {
     // Enable save button when settings change
     this.elements.saveSettingsBtn.classList.add('pulse');
@@ -393,8 +393,8 @@ class SettingsManager {
   }
 
   /**
-     * Show loading overlay
-     */
+   * Show loading overlay
+   */
   showLoading(show, text = 'Processing...') {
     const overlay = this.elements.loadingOverlay;
     const textEl = overlay.querySelector('.loading-text');
@@ -408,8 +408,8 @@ class SettingsManager {
   }
 
   /**
-     * Show status message
-     */
+   * Show status message
+   */
   showMessage(message, type = 'info') {
     const messagesEl = this.elements.statusMessages;
     messagesEl.textContent = message;
@@ -425,15 +425,15 @@ class SettingsManager {
   }
 
   /**
-     * Close settings window
-     */
+   * Close settings window
+   */
   closeSettings() {
     window.electronAPI.closeWindow();
   }
 
   /**
-     * Cleanup when window closes
-     */
+   * Cleanup when window closes
+   */
   cleanup() {
     // Clear any sensitive data from memory
     if (this.elements.apiKeyInput) {

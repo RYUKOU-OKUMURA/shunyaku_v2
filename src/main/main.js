@@ -228,10 +228,7 @@ function setupApplicationMenu() {
       },
       {
         label: 'Window',
-        submenu: [
-          { role: 'minimize' },
-          { role: 'close' },
-        ],
+        submenu: [{ role: 'minimize' }, { role: 'close' }],
       },
     ];
 

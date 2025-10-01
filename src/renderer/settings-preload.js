@@ -8,34 +8,34 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Expose secure API to renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
   /**
-     * Settings management
-     */
+   * Settings management
+   */
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   resetSettings: () => ipcRenderer.invoke('reset-settings'),
 
   /**
-     * API key management
-     */
+   * API key management
+   */
   hasAPIKey: (keyName) => ipcRenderer.invoke('has-api-key', keyName),
   saveAPIKey: (keyName, keyValue) => ipcRenderer.invoke('save-api-key', keyName, keyValue),
   deleteAPIKey: (keyName) => ipcRenderer.invoke('delete-api-key', keyName),
   testAPIKey: (keyValue) => ipcRenderer.invoke('test-api-key', keyValue),
 
   /**
-     * Window management
-     */
+   * Window management
+   */
   closeWindow: () => ipcRenderer.invoke('close-settings-window'),
   minimizeWindow: () => ipcRenderer.invoke('minimize-settings-window'),
 
   /**
-     * Application info
-     */
+   * Application info
+   */
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 
   /**
-     * Settings window events
-     */
+   * Settings window events
+   */
   onSettingsChange: (callback) => {
     const wrapper = (event, ...args) => callback(...args);
     ipcRenderer.on('settings-changed', wrapper);
@@ -51,13 +51,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   /**
-     * Language management
-     */
+   * Language management
+   */
   getSupportedLanguages: () => ipcRenderer.invoke('get-supported-languages'),
 
   /**
-     * Translation test
-     */
+   * Translation test
+   */
   testTranslation: (text, targetLang) => ipcRenderer.invoke('test-translation', text, targetLang),
 });
 
