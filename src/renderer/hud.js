@@ -255,8 +255,6 @@
     }
   }
 
-
-
   // ステータスを更新
   function updateStatus(status, message) {
     if (elements.statusText) {
@@ -289,7 +287,9 @@
 
   // 文字数カウンターを更新
   function updateCharacterCount() {
-    if (!elements.manualTextInput || !elements.characterCount) {return;}
+    if (!elements.manualTextInput || !elements.characterCount) {
+      return;
+    }
 
     const text = elements.manualTextInput.value;
     const count = text.length;
@@ -310,7 +310,9 @@
 
   // 翻訳ボタンの状態を更新
   function updateTranslateButtonState() {
-    if (!elements.translateBtn || !elements.manualTextInput) {return;}
+    if (!elements.translateBtn || !elements.manualTextInput) {
+      return;
+    }
 
     const text = elements.manualTextInput.value.trim();
     const hasText = text.length > 0;
@@ -328,7 +330,9 @@
 
   // 翻訳を実行
   async function performTranslation() {
-    if (!elements.manualTextInput || !elements.targetLanguageSelect) {return;}
+    if (!elements.manualTextInput || !elements.targetLanguageSelect) {
+      return;
+    }
 
     const text = elements.manualTextInput.value.trim();
     const targetLanguage = elements.targetLanguageSelect.value;
@@ -429,7 +433,9 @@
 
   // エラーを表示
   function showError(message, errorType = null) {
-    if (!elements.errorDisplay || !elements.errorMessage) {return;}
+    if (!elements.errorDisplay || !elements.errorMessage) {
+      return;
+    }
 
     let displayMessage = message;
 
@@ -437,10 +443,12 @@
     if (errorType) {
       switch (errorType) {
       case 'api_key':
-        displayMessage = 'APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
+        displayMessage =
+            'APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
         break;
       case 'quota_exceeded':
-        displayMessage = 'API使用量の上限に達しました。しばらく時間をおいてから再試行してください。';
+        displayMessage =
+            'API使用量の上限に達しました。しばらく時間をおいてから再試行してください。';
         break;
       case 'network':
         displayMessage = 'ネットワークエラーです。インターネット接続を確認してください。';

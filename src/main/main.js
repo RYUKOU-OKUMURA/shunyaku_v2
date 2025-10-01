@@ -435,32 +435,35 @@ function setupIPCHandlers() {
   });
 
   // 手動テキスト翻訳（タスク2.5.3）
-  ipcMain.handle('translate-text', async (event, { text, targetLanguage, sourceLanguage = null }) => {
-    try {
-      // TranslationServiceが初期化されているかチェック
-      if (!translationService.isInitialized()) {
-        const initSuccess = await translationService.initialize();
-        if (!initSuccess) {
-          throw new Error('翻訳サービスの初期化に失敗しました。APIキーを確認してください。');
+  ipcMain.handle(
+    'translate-text',
+    async (event, { text, targetLanguage, sourceLanguage = null }) => {
+      try {
+        // TranslationServiceが初期化されているかチェック
+        if (!translationService.isInitialized()) {
+          const initSuccess = await translationService.initialize();
+          if (!initSuccess) {
+            throw new Error('翻訳サービスの初期化に失敗しました。APIキーを確認してください。');
+          }
         }
+
+        // 翻訳実行
+        const result = await translationService.translate(text, targetLanguage, sourceLanguage);
+
+        return {
+          success: true,
+          result: result,
+        };
+      } catch (error) {
+        console.error('Translation failed:', error);
+        return {
+          success: false,
+          error: error.message,
+          errorType: getTranslationErrorType(error),
+        };
       }
-
-      // 翻訳実行
-      const result = await translationService.translate(text, targetLanguage, sourceLanguage);
-
-      return {
-        success: true,
-        result: result,
-      };
-    } catch (error) {
-      console.error('Translation failed:', error);
-      return {
-        success: false,
-        error: error.message,
-        errorType: getTranslationErrorType(error),
-      };
-    }
-  });
+    },
+  );
 
   // 翻訳設定の取得
   ipcMain.handle('get-translation-settings', async () => {
@@ -513,11 +516,20 @@ function setupIPCHandlers() {
 function getTranslationErrorType(error) {
   const message = error.message?.toLowerCase() || '';
 
-  if (message.includes('api key') || message.includes('keychain') || message.includes('401') || message.includes('403')) {
+  if (
+    message.includes('api key') ||
+    message.includes('keychain') ||
+    message.includes('401') ||
+    message.includes('403')
+  ) {
     return 'api_key';
   } else if (message.includes('429') || message.includes('quota') || message.includes('limit')) {
     return 'quota_exceeded';
-  } else if (message.includes('network') || message.includes('timeout') || message.includes('connection')) {
+  } else if (
+    message.includes('network') ||
+    message.includes('timeout') ||
+    message.includes('connection')
+  ) {
     return 'network';
   } else if (message.includes('invalid') || message.includes('validation')) {
     return 'validation';

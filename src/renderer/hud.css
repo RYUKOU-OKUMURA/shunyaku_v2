@@ -326,7 +326,9 @@ body {
   line-height: 1.4;
   resize: vertical;
   min-height: 60px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   user-select: text;
   -webkit-user-select: text;
 }
@@ -529,12 +531,12 @@ body {
   .text-content {
     font-size: 12px;
   }
-  
+
   .translate-section {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .translate-btn {
     width: 100%;
     min-width: auto;

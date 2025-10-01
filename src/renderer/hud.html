@@ -43,12 +43,10 @@
                 rows="3"
                 maxlength="5000"
               ></textarea>
-              <div class="character-counter">
-                <span id="characterCount">0</span> / 5000文字
-              </div>
+              <div class="character-counter"><span id="characterCount">0</span> / 5000文字</div>
             </div>
           </div>
-          
+
           <!-- 翻訳ボタンとオプション（タスク2.5.2） -->
           <div class="translate-section">
             <div class="translate-options">
@@ -70,7 +68,7 @@
         </div>
 
         <!-- 翻訳結果表示エリア -->
-        <div class="text-display-area" id="textDisplayArea" style="display: none;">
+        <div class="text-display-area" id="textDisplayArea" style="display: none">
           <div class="original-text-section">
             <div class="text-label">原文:</div>
             <div class="text-content" id="originalText">
@@ -84,15 +82,15 @@
               こんにちは世界！これはHUD表示をテストするためのサンプルテキストです。
             </div>
           </div>
-          
+
           <!-- ローディングインジケーター（タスク2.5.5） -->
-          <div class="loading-indicator" id="loadingIndicator" style="display: none;">
+          <div class="loading-indicator" id="loadingIndicator" style="display: none">
             <div class="loading-spinner"></div>
             <div class="loading-text">翻訳中...</div>
           </div>
-          
+
           <!-- エラー表示（タスク2.5.6） -->
-          <div class="error-display" id="errorDisplay" style="display: none;">
+          <div class="error-display" id="errorDisplay" style="display: none">
             <div class="error-icon">⚠️</div>
             <div class="error-message" id="errorMessage">エラーメッセージ</div>
             <button class="retry-btn" id="retryBtn">再試行</button>
@@ -100,7 +98,7 @@
         </div>
 
         <!-- 操作ボタンエリア -->
-        <div class="action-buttons" id="actionButtons" style="display: none;">
+        <div class="action-buttons" id="actionButtons" style="display: none">
           <button class="action-btn copy-btn" id="copyBtn" title="翻訳文をコピー">
             <span class="btn-icon">📋</span>
             <span class="btn-text">コピー</span>
