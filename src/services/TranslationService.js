@@ -447,6 +447,64 @@ class TranslationService {
   }
 
   /**
+   * APIキーをテストして接続を確認する
+   * @param {string} apiKey - テストするAPIキー
+   * @returns {Promise<Object>} テスト結果
+   */
+  async testConnection(apiKey) {
+    try {
+      // テンポラリなTranslatorインスタンスを作成
+      const testTranslator = new Translator(apiKey);
+
+      // API接続テスト（使用量取得）
+      const usage = await testTranslator.getUsage();
+
+      // 簡単な翻訳テスト
+      const testResult = await testTranslator.translateText('Hello', null, 'ja');
+
+      return {
+        success: true,
+        usage: {
+          character: usage.character,
+          document: usage.document,
+        },
+        testTranslation: {
+          original: 'Hello',
+          translated: testResult.text,
+          detectedLanguage: testResult.detectedSourceLang,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`[TranslationService] API接続テスト失敗: ${error.message}`, error);
+
+      // エラーの種類を判定
+      let errorType = 'unknown';
+      let userMessage = 'Unknown error occurred';
+
+      if (error.message.includes('401') || error.message.includes('403')) {
+        errorType = 'auth';
+        userMessage = 'Invalid API key. Please check your DeepL API key.';
+      } else if (error.message.includes('429')) {
+        errorType = 'quota';
+        userMessage = 'API quota exceeded. Please try again later.';
+      } else if (error.message.includes('timeout') || error.message.includes('ENOTFOUND')) {
+        errorType = 'network';
+        userMessage = 'Network error. Please check your internet connection.';
+      } else if (error.message.includes('456')) {
+        errorType = 'quota';
+        userMessage = 'DeepL API quota exceeded for this month.';
+      }
+
+      return {
+        success: false,
+        error: error.message,
+        errorType,
+        userMessage,
+      };
+    }
+  }
+
+  /**
    * リソースをクリーンアップする
    */
   async cleanup() {

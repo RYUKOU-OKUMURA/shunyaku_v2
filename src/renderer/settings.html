@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shunyaku v2 - Settings</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Shunyaku v2 Settings</h1>
+        </header>
+
+        <main class="settings-main">
+            <!-- API Configuration Section -->
+            <section class="settings-section">
+                <h2>Translation API Configuration</h2>
+                
+                <div class="input-group">
+                    <label for="deepl-api-key">DeepL API Key</label>
+                    <div class="input-with-info">
+                        <input type="password" 
+                               id="deepl-api-key" 
+                               name="deepl-api-key" 
+                               placeholder="Enter your DeepL API key..."
+                               maxlength="100"
+                               autocomplete="off">
+                        <button type="button" id="toggle-api-key" class="toggle-btn" title="Show/Hide API Key">
+                            👁
+                        </button>
+                    </div>
+                    <small class="input-hint">
+                        Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx<br>
+                        Get your free API key from <a href="https://www.deepl.com/pro-api" target="_blank">DeepL API</a>
+                    </small>
+                    <div id="api-key-validation" class="validation-message"></div>
+                </div>
+
+                <div class="input-group">
+                    <label for="api-key-status">API Key Status</label>
+                    <div id="api-key-status" class="status-indicator">
+                        <span class="status-icon">⏳</span>
+                        <span class="status-text">Checking...</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Translation Settings Section -->
+            <section class="settings-section">
+                <h2>Translation Settings</h2>
+                
+                <div class="input-group">
+                    <label for="source-language">Source Language</label>
+                    <select id="source-language" name="source-language">
+                        <option value="auto">Auto Detect</option>
+                        <option value="en">English</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="zh">Chinese</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ru">Russian</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="target-language">Target Language</label>
+                    <select id="target-language" name="target-language">
+                        <option value="ja">Japanese</option>
+                        <option value="en">English</option>
+                        <option value="ko">Korean</option>
+                        <option value="zh">Chinese</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ru">Russian</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Actions -->
+            <section class="settings-actions">
+                <div class="button-group">
+                    <button type="button" id="test-api" class="btn btn-secondary" disabled>
+                        <span class="btn-icon">🧪</span>
+                        Test API Connection
+                    </button>
+                    <button type="button" id="save-settings" class="btn btn-primary">
+                        <span class="btn-icon">💾</span>
+                        Save Settings
+                    </button>
+                </div>
+                <div class="button-group">
+                    <button type="button" id="reset-settings" class="btn btn-warning">
+                        <span class="btn-icon">🔄</span>
+                        Reset to Default
+                    </button>
+                    <button type="button" id="delete-api-key" class="btn btn-danger">
+                        <span class="btn-icon">🗑</span>
+                        Delete API Key
+                    </button>
+                </div>
+            </section>
+
+            <!-- Status Messages -->
+            <div id="status-messages" class="status-messages" aria-live="polite"></div>
+        </main>
+
+        <footer>
+            <div class="footer-actions">
+                <button type="button" id="close-settings" class="btn btn-ghost">
+                    <span class="btn-icon">✕</span>
+                    Close
+                </button>
+            </div>
+            <div class="footer-info">
+                <small>Shunyaku v2 - macOS Local Translation App</small>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Processing...</div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+
+</html>

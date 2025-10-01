@@ -1,6 +1,11 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const HUDWindowManager = require('./HUDWindowManager');
+
+// Services
+const SettingsStore = require('../services/SettingsStore');
+const KeychainManager = require('../services/KeychainManager');
+const TranslationService = require('../services/TranslationService');
 
 /**
  * Shunyaku v2 - Main Process Entry Point
@@ -11,7 +16,11 @@ const HUDWindowManager = require('./HUDWindowManager');
  */
 
 let mainWindow = null;
+let settingsWindow = null;
 let hudWindowManager = null;
+let settingsStore = null;
+let keychainManager = null;
+let translationService = null;
 
 /**
  * メインアプリケーションウィンドウを作成
@@ -57,8 +66,16 @@ app.whenReady().then(async () => {
     app.dock.show();
   }
 
+  // サービスの初期化
+  settingsStore = new SettingsStore();
+  keychainManager = new KeychainManager();
+  translationService = new TranslationService();
+
   // HUDウィンドウマネージャーを初期化
   hudWindowManager = new HUDWindowManager();
+
+  // メニューバーの設定（macOS用）
+  setupApplicationMenu();
 
   // IPC通信の設定
   setupIPCHandlers();
@@ -106,6 +123,124 @@ app.on('activate', () => {
 });
 
 /**
+ * 設定ウィンドウを作成
+ */
+function createSettingsWindow() {
+  // 既に設定ウィンドウが開いている場合はフォーカスを当てる
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 700,
+    height: 800,
+    minWidth: 600,
+    minHeight: 700,
+    show: false,
+    resizable: true,
+    maximizable: false,
+    fullscreenable: false,
+    title: 'Shunyaku v2 - Settings',
+    titleBarStyle: 'hiddenInset',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, '../renderer/settings-preload.js'),
+      webSecurity: true,
+    },
+  });
+
+  // 設定画面のHTMLをロード
+  settingsWindow.loadFile(path.join(__dirname, '../renderer/settings.html'));
+
+  // ウィンドウの準備ができたら表示
+  settingsWindow.once('ready-to-show', () => {
+    settingsWindow.show();
+
+    // 開発時はDevToolsを開く
+    if (process.env.NODE_ENV === 'development' || process.argv.includes('--dev')) {
+      settingsWindow.webContents.openDevTools();
+    }
+  });
+
+  // ウィンドウが閉じられたときのクリーンアップ
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+
+  return settingsWindow;
+}
+
+/**
+ * アプリケーションメニューの設定（macOS用）
+ */
+function setupApplicationMenu() {
+  if (process.platform === 'darwin') {
+    const template = [
+      {
+        label: app.getName(),
+        submenu: [
+          { role: 'about' },
+          { type: 'separator' },
+          {
+            label: 'Settings...',
+            accelerator: 'CmdOrCtrl+,',
+            click: () => {
+              createSettingsWindow();
+            },
+          },
+          { type: 'separator' },
+          { role: 'services' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideothers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' },
+        ],
+      },
+      {
+        label: 'Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'selectall' },
+        ],
+      },
+      {
+        label: 'View',
+        submenu: [
+          { role: 'reload' },
+          { role: 'forceReload' },
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          { type: 'separator' },
+          { role: 'togglefullscreen' },
+        ],
+      },
+      {
+        label: 'Window',
+        submenu: [
+          { role: 'minimize' },
+          { role: 'close' },
+        ],
+      },
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+  }
+}
+
+/**
  * IPC通信ハンドラーの設定
  */
 function setupIPCHandlers() {
@@ -144,17 +279,184 @@ function setupIPCHandlers() {
     const { screen } = require('electron');
     return screen.getCursorScreenPoint();
   });
+
+  // 設定ウィンドウ関連のIPC
+  ipcMain.handle('open-settings', () => {
+    createSettingsWindow();
+  });
+
+  ipcMain.handle('close-settings-window', () => {
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.close();
+    }
+  });
+
+  ipcMain.handle('minimize-settings-window', () => {
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.minimize();
+    }
+  });
+
+  // 設定管理のIPC
+  ipcMain.handle('get-settings', async () => {
+    try {
+      return settingsStore.getAllSettings();
+    } catch (error) {
+      console.error('Failed to get settings:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('save-settings', async (event, settings) => {
+    try {
+      // 各設定カテゴリを個別に保存
+      if (settings.translation) {
+        settingsStore.setTranslationSettings(settings.translation);
+      }
+      if (settings.hud) {
+        settingsStore.setHUDSettings(settings.hud);
+      }
+      if (settings.shortcuts) {
+        settingsStore.setShortcutSettings(settings.shortcuts);
+      }
+      if (settings.app) {
+        settingsStore.setAppSettings(settings.app);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('reset-settings', async () => {
+    try {
+      // 設定をデフォルト値にリセット
+      settingsStore.resetToDefaults();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to reset settings:', error);
+      throw error;
+    }
+  });
+
+  // APIキー管理のIPC
+  ipcMain.handle('has-api-key', async (event, keyName) => {
+    try {
+      return await keychainManager.hasAPIKey(keyName);
+    } catch (error) {
+      console.error('Failed to check API key:', error);
+      return false;
+    }
+  });
+
+  ipcMain.handle('save-api-key', async (event, keyName, keyValue) => {
+    try {
+      if (keyName === 'deepl') {
+        await keychainManager.saveDeepLAPIKey(keyValue);
+      } else {
+        await keychainManager.saveAPIKey(keyName, keyValue);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to save API key:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('delete-api-key', async (event, keyName) => {
+    try {
+      if (keyName === 'deepl') {
+        await keychainManager.deleteDeepLAPIKey();
+      } else {
+        await keychainManager.deleteAPIKey(keyName);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete API key:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('test-api-key', async (event, keyValue) => {
+    try {
+      // テンポラリでTranslationServiceを初期化してAPIキーをテスト
+      const testService = new TranslationService();
+      const result = await testService.testConnection(keyValue);
+      return result;
+    } catch (error) {
+      console.error('Failed to test API key:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // アプリ情報のIPC
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
+  // 対応言語の取得
+  ipcMain.handle('get-supported-languages', () => {
+    return {
+      source: [
+        { code: 'auto', name: 'Auto Detect' },
+        { code: 'en', name: 'English' },
+        { code: 'ja', name: 'Japanese' },
+        { code: 'ko', name: 'Korean' },
+        { code: 'zh', name: 'Chinese' },
+        { code: 'es', name: 'Spanish' },
+        { code: 'fr', name: 'French' },
+        { code: 'de', name: 'German' },
+        { code: 'it', name: 'Italian' },
+        { code: 'pt', name: 'Portuguese' },
+        { code: 'ru', name: 'Russian' },
+      ],
+      target: [
+        { code: 'ja', name: 'Japanese' },
+        { code: 'en', name: 'English' },
+        { code: 'ko', name: 'Korean' },
+        { code: 'zh', name: 'Chinese' },
+        { code: 'es', name: 'Spanish' },
+        { code: 'fr', name: 'French' },
+        { code: 'de', name: 'German' },
+        { code: 'it', name: 'Italian' },
+        { code: 'pt', name: 'Portuguese' },
+        { code: 'ru', name: 'Russian' },
+      ],
+    };
+  });
+
+  // テスト翻訳
+  ipcMain.handle('test-translation', async (event, text, targetLang) => {
+    try {
+      const result = await translationService.translate(text, 'auto', targetLang);
+      return result;
+    } catch (error) {
+      console.error('Failed to test translation:', error);
+      throw error;
+    }
+  });
 }
 
 /**
  * アプリが終了する前の処理
  */
 app.on('before-quit', (_event) => {
-  // HUDウィンドウのクリーンアップ
+  // ウィンドウのクリーンアップ
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.destroy();
+    settingsWindow = null;
+  }
+
   if (hudWindowManager) {
     hudWindowManager.destroy();
     hudWindowManager = null;
   }
+
+  // サービスのクリーンアップ
+  settingsStore = null;
+  keychainManager = null;
+  translationService = null;
 });
 
 /**
