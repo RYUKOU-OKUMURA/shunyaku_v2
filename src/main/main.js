@@ -7,6 +7,7 @@ const SettingsStore = require('../services/SettingsStore');
 const KeychainManager = require('../services/KeychainManager');
 const TranslationService = require('../services/TranslationService');
 const AppLifecycleManager = require('../services/AppLifecycleManager');
+const CaptureService = require('../services/CaptureService');
 
 /**
  * Shunyaku v2 - Main Process Entry Point
@@ -23,6 +24,7 @@ let settingsStore = null;
 let keychainManager = null;
 let translationService = null;
 let appLifecycleManager = null;
+let captureService = null;
 
 /**
  * メインアプリケーションウィンドウを作成
@@ -72,6 +74,7 @@ app.whenReady().then(async () => {
   settingsStore = new SettingsStore();
   keychainManager = new KeychainManager();
   translationService = new TranslationService();
+  captureService = new CaptureService();
 
   // AppLifecycleManagerを初期化（権限チェック）
   appLifecycleManager = new AppLifecycleManager();
@@ -593,6 +596,125 @@ function setupIPCHandlers() {
       };
     }
   });
+
+  // スクリーンキャプチャ関連のIPC（タスク3.2）
+  ipcMain.handle('get-available-screens', async () => {
+    try {
+      if (captureService) {
+        const screens = await captureService.getAvailableSources();
+        return {
+          success: true,
+          screens: screens,
+        };
+      } else {
+        throw new Error('CaptureService not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to get available screens:', error);
+      return {
+        success: false,
+        screens: [],
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('capture-screen', async (event, sourceId = null) => {
+    try {
+      if (captureService) {
+        const imagePath = await captureService.captureScreen(sourceId);
+        return {
+          success: true,
+          imagePath: imagePath,
+        };
+      } else {
+        throw new Error('CaptureService not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to capture screen:', error);
+      return {
+        success: false,
+        imagePath: null,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('capture-high-res-screen', async (event, sourceId) => {
+    try {
+      if (captureService) {
+        const imagePath = await captureService.captureHighResolutionScreen(sourceId);
+        return {
+          success: true,
+          imagePath: imagePath,
+        };
+      } else {
+        throw new Error('CaptureService not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to capture high-res screen:', error);
+      return {
+        success: false,
+        imagePath: null,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('capture-all-screens', async () => {
+    try {
+      if (captureService) {
+        const captures = await captureService.captureAllScreens();
+        return {
+          success: true,
+          captures: captures,
+        };
+      } else {
+        throw new Error('CaptureService not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to capture all screens:', error);
+      return {
+        success: false,
+        captures: [],
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('cleanup-temp-files', async () => {
+    try {
+      if (captureService) {
+        await captureService.cleanupTempFiles();
+        return { success: true };
+      } else {
+        throw new Error('CaptureService not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to cleanup temp files:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('delete-temp-file', async (event, filePath) => {
+    try {
+      if (captureService) {
+        await captureService.deleteTempFile(filePath);
+        return { success: true };
+      } else {
+        throw new Error('CaptureService not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to delete temp file:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
 }
 
 /**
@@ -645,6 +767,12 @@ app.on('before-quit', (_event) => {
     appLifecycleManager.destroy();
     appLifecycleManager = null;
   }
+
+  if (captureService) {
+    captureService.shutdown();
+    captureService = null;
+  }
+
   settingsStore = null;
   keychainManager = null;
   translationService = null;
