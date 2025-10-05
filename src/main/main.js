@@ -6,6 +6,7 @@ const HUDWindowManager = require('./HUDWindowManager');
 const SettingsStore = require('../services/SettingsStore');
 const KeychainManager = require('../services/KeychainManager');
 const TranslationService = require('../services/TranslationService');
+const AppLifecycleManager = require('../services/AppLifecycleManager');
 
 /**
  * Shunyaku v2 - Main Process Entry Point
@@ -21,6 +22,7 @@ let hudWindowManager = null;
 let settingsStore = null;
 let keychainManager = null;
 let translationService = null;
+let appLifecycleManager = null;
 
 /**
  * メインアプリケーションウィンドウを作成
@@ -70,6 +72,17 @@ app.whenReady().then(async () => {
   settingsStore = new SettingsStore();
   keychainManager = new KeychainManager();
   translationService = new TranslationService();
+
+  // AppLifecycleManagerを初期化（権限チェック）
+  appLifecycleManager = new AppLifecycleManager();
+  const permissionsGranted = await appLifecycleManager.initialize();
+
+  if (!permissionsGranted) {
+    // 権限が不足している場合、AppLifecycleManagerがガイドを表示
+    // ユーザーがアプリを終了するか設定を完了するまで待機
+    console.log('Application waiting for permissions...');
+    return;
+  }
 
   // HUDウィンドウマネージャーを初期化
   hudWindowManager = new HUDWindowManager();
@@ -506,6 +519,80 @@ function setupIPCHandlers() {
       };
     }
   });
+
+  // 権限管理関連のIPC（タスク3.1）
+  ipcMain.handle('check-screen-recording-permission', async () => {
+    try {
+      if (appLifecycleManager) {
+        const hasPermission = await appLifecycleManager.checkScreenRecordingPermission();
+        return {
+          success: true,
+          hasPermission: hasPermission,
+          status: appLifecycleManager.getPermissionStatus(),
+        };
+      } else {
+        return {
+          success: false,
+          hasPermission: false,
+          status: {},
+          error: 'AppLifecycleManager not initialized',
+        };
+      }
+    } catch (error) {
+      console.error('Screen recording permission check failed:', error);
+      return {
+        success: false,
+        hasPermission: false,
+        status: {},
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('recheck-permissions', async () => {
+    try {
+      if (appLifecycleManager) {
+        const hasPermissions = await appLifecycleManager.recheckPermissions();
+        return {
+          success: true,
+          hasPermissions: hasPermissions,
+          status: appLifecycleManager.getPermissionStatus(),
+        };
+      } else {
+        return {
+          success: false,
+          hasPermissions: false,
+          status: {},
+          error: 'AppLifecycleManager not initialized',
+        };
+      }
+    } catch (error) {
+      console.error('Permission recheck failed:', error);
+      return {
+        success: false,
+        hasPermissions: false,
+        status: {},
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('open-system-preferences', async () => {
+    try {
+      if (appLifecycleManager) {
+        await appLifecycleManager.openSystemPreferences();
+        return { success: true };
+      } else {
+        throw new Error('AppLifecycleManager not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to open system preferences:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
 }
 
 /**
@@ -554,6 +641,10 @@ app.on('before-quit', (_event) => {
   }
 
   // サービスのクリーンアップ
+  if (appLifecycleManager) {
+    appLifecycleManager.destroy();
+    appLifecycleManager = null;
+  }
   settingsStore = null;
   keychainManager = null;
   translationService = null;
