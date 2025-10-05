@@ -529,10 +529,7 @@
       // ステータスを更新
       const confidence = translationData.confidence || 0;
       const languageInfo = `${translationData.sourceLanguage || 'auto'} → ${translationData.targetLanguage || 'ja'}`;
-      updateStatus(
-        'ready',
-        `翻訳完了 (${languageInfo}, 信頼度: ${confidence}%)`,
-      );
+      updateStatus('ready', `翻訳完了 (${languageInfo}, 信頼度: ${confidence}%)`);
 
       hideLoading();
       hideError();

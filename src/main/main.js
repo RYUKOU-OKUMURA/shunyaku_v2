@@ -955,14 +955,14 @@ async function executeFullTranslationWorkflow(options = {}) {
         minConfidence: 60,
         returnDetails: true,
       }),
-      translationService.isInitialized()
-        ? Promise.resolve(true)
-        : translationService.initialize(),
+      translationService.isInitialized() ? Promise.resolve(true) : translationService.initialize(),
     ]);
 
     // OCR結果の処理
     if (ocrResult.status === 'rejected' || !ocrResult.value.success) {
-      throw new Error(`OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`);
+      throw new Error(
+        `OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`,
+      );
     }
 
     const ocrData = ocrResult.value;
@@ -978,7 +978,9 @@ async function executeFullTranslationWorkflow(options = {}) {
       textLength: ocrData.text.length,
     };
 
-    console.log(`✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`);
+    console.log(
+      `✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`,
+    );
 
     // 翻訳サービス初期化結果の確認
     if (translationInitResult.status === 'rejected' || !translationInitResult.value) {
@@ -1024,7 +1026,8 @@ async function executeFullTranslationWorkflow(options = {}) {
     };
 
     // HUDをマウス位置近くに表示
-    const mousePosition = options.mousePosition || require('electron').screen.getCursorScreenPoint();
+    const mousePosition =
+      options.mousePosition || require('electron').screen.getCursorScreenPoint();
     await hudWindowManager.showHUDWithTranslation(mousePosition, hudData);
 
     performanceMetrics.phases.hudDisplay = {
@@ -1037,7 +1040,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     console.log(`✅ HUD displayed at position (${mousePosition.x}, ${mousePosition.y})`);
 
     // 一時ファイルのクリーンアップを並列で実行（パフォーマンス最適化）
-    const cleanupPromise = captureService.deleteTempFile(imagePath).catch(cleanupError => {
+    const cleanupPromise = captureService.deleteTempFile(imagePath).catch((cleanupError) => {
       console.warn('Temp file cleanup warning:', cleanupError.message);
     });
 
@@ -1045,7 +1048,9 @@ async function executeFullTranslationWorkflow(options = {}) {
     performanceMetrics.totalTime = Date.now() - startTime;
     performanceMetrics.success = true;
 
-    console.log(`✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`);
+    console.log(
+      `✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`,
+    );
     logPerformanceMetrics(performanceMetrics);
 
     // 非同期でクリーンアップを継続
@@ -1064,7 +1069,6 @@ async function executeFullTranslationWorkflow(options = {}) {
       performance: performanceMetrics,
       hudDisplayed: true,
     };
-
   } catch (error) {
     // エラー時のメトリクス納作
     performanceMetrics.totalTime = Date.now() - startTime;
@@ -1072,12 +1076,16 @@ async function executeFullTranslationWorkflow(options = {}) {
     performanceMetrics.error = error.message;
     performanceMetrics.errorType = categorizeError(error);
 
-    console.error(`❌ Workflow failed after ${performanceMetrics.totalTime}ms [${workflowId}]:`, error);
+    console.error(
+      `❌ Workflow failed after ${performanceMetrics.totalTime}ms [${workflowId}]:`,
+      error,
+    );
     logPerformanceMetrics(performanceMetrics);
 
     // HUDにエラー情報を表示
     try {
-      const mousePosition = options.mousePosition || require('electron').screen.getCursorScreenPoint();
+      const mousePosition =
+        options.mousePosition || require('electron').screen.getCursorScreenPoint();
       await hudWindowManager.showHUDWithError(mousePosition, {
         error: getHumanReadableError(error, performanceMetrics.errorType),
         workflowId: workflowId,
@@ -1126,7 +1134,7 @@ async function checkWorkflowPrerequisites() {
     checks.translationService = translationService !== null && translationService.isInitialized();
     checks.hudWindowManager = hudWindowManager !== null;
 
-    const allPassed = Object.values(checks).every(check => check === true);
+    const allPassed = Object.values(checks).every((check) => check === true);
 
     return {
       success: allPassed,
@@ -1286,11 +1294,7 @@ function categorizeError(error) {
   }
 
   // リソース関連エラー
-  if (
-    message.includes('memory') ||
-    message.includes('disk') ||
-    message.includes('enospc')
-  ) {
+  if (message.includes('memory') || message.includes('disk') || message.includes('enospc')) {
     return 'resource';
   }
 
@@ -1379,22 +1383,12 @@ function getErrorSuggestions(errorType) {
     ];
 
   case 'capture':
-    return [
-      'スクリーンキャプチャの権限を再確認',
-      'アプリを再起動',
-    ];
+    return ['スクリーンキャプチャの権限を再確認', 'アプリを再起動'];
 
   case 'translation':
-    return [
-      'DeepL APIの使用量を確認',
-      'APIキーの有効性を確認',
-      'しばらく時間を置いてから再試行',
-    ];
+    return ['DeepL APIの使用量を確認', 'APIキーの有効性を確認', 'しばらく時間を置いてから再試行'];
 
   default:
-    return [
-      'アプリを再起動してみてください',
-      '問題が続く場合はサポートにお問い合わせください',
-    ];
+    return ['アプリを再起動してみてください', '問題が続く場合はサポートにお問い合わせください'];
   }
 }
