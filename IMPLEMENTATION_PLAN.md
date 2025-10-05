@@ -174,14 +174,14 @@ macOS上で「スクリーンショット → OCR → 翻訳 → HUD表示」を
 **検証条件**: スクリーンショットが正常に取得・保存される
 
 #### タスク 3.3: OCRエンジン実装
-- [ ] 3.3.1 tesseract.jsインストール
-- [ ] 3.3.2 OCRWorker.js作成（Worker Threads使用）
-- [ ] 3.3.3 OCRService.js作成（Workerラッパー）
-- [ ] 3.3.4 言語データダウンロード処理（eng, jpn）
-- [ ] 3.3.5 tessdata配置処理（%APP_SUPPORT%/tessdata）
-- [ ] 3.3.6 OCR実行メソッド実装
-- [ ] 3.3.7 信頼度スコアチェック実装
-- [ ] 3.3.8 画像前処理（2倍縮小）実装
+- [x] 3.3.1 tesseract.jsインストール
+- [x] 3.3.2 OCRWorker.js作成（Worker Threads使用）
+- [x] 3.3.3 OCRService.js作成（Workerラッパー）
+- [x] 3.3.4 言語データダウンロード処理（eng, jpn）
+- [x] 3.3.5 tessdata配置処理（%APP_SUPPORT%/tessdata）
+- [x] 3.3.6 OCR実行メソッド実装
+- [x] 3.3.7 信頼度スコアチェック実装
+- [x] 3.3.8 画像前処理（2倍縮小）実装
 
 **検証条件**: 画像からテキストが抽出される（精度80%以上）
 

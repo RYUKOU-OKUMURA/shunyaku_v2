@@ -24,9 +24,9 @@ class CaptureService {
   }
 
   /**
-     * 一時ディレクトリを初期化
-     * @returns {Promise<void>}
-     */
+   * 一時ディレクトリを初期化
+   * @returns {Promise<void>}
+   */
   async initializeTempDirectory() {
     try {
       await fs.mkdir(this.tempDir, { recursive: true });
@@ -37,9 +37,9 @@ class CaptureService {
   }
 
   /**
-     * 利用可能な画面ソースを取得
-     * @returns {Promise<Array>} デスクトップソースの配列
-     */
+   * 利用可能な画面ソースを取得
+   * @returns {Promise<Array>} デスクトップソースの配列
+   */
   async getAvailableSources() {
     try {
       const sources = await desktopCapturer.getSources({
@@ -47,7 +47,7 @@ class CaptureService {
         thumbnailSize: { width: 200, height: 150 },
       });
 
-      return sources.map(source => ({
+      return sources.map((source) => ({
         id: source.id,
         name: source.name,
         thumbnail: source.thumbnail.toDataURL(),
@@ -59,10 +59,10 @@ class CaptureService {
   }
 
   /**
-     * 画面全体のスクリーンショットを取得
-     * @param {string} sourceId - キャプチャするスクリーンのID（オプション）
-     * @returns {Promise<string>} 保存された画像ファイルのパス
-     */
+   * 画面全体のスクリーンショットを取得
+   * @param {string} sourceId - キャプチャするスクリーンのID（オプション）
+   * @returns {Promise<string>} 保存された画像ファイルのパス
+   */
   async captureScreen(sourceId = null) {
     try {
       await this.initializeTempDirectory();
@@ -82,7 +82,7 @@ class CaptureService {
         thumbnailSize: { width: 1920, height: 1080 },
       });
 
-      const targetSource = source.find(s => s.id === sourceId);
+      const targetSource = source.find((s) => s.id === sourceId);
       if (!targetSource) {
         throw new Error('指定された画面が見つかりません');
       }
@@ -99,7 +99,6 @@ class CaptureService {
 
       console.log(`Screenshot captured: ${filePath}`);
       return filePath;
-
     } catch (error) {
       console.error('Failed to capture screen:', error);
       throw new Error(`スクリーンショットの取得に失敗しました: ${error.message}`);
@@ -107,10 +106,10 @@ class CaptureService {
   }
 
   /**
-     * 高解像度スクリーンショットを取得
-     * @param {string} sourceId - キャプチャするスクリーンのID
-     * @returns {Promise<string>} 保存された画像ファイルのパス
-     */
+   * 高解像度スクリーンショットを取得
+   * @param {string} sourceId - キャプチャするスクリーンのID
+   * @returns {Promise<string>} 保存された画像ファイルのパス
+   */
   async captureHighResolutionScreen(sourceId) {
     try {
       await this.initializeTempDirectory();
@@ -121,7 +120,7 @@ class CaptureService {
         thumbnailSize: { width: 3840, height: 2160 }, // 4K解像度
       });
 
-      const targetSource = sources.find(s => s.id === sourceId);
+      const targetSource = sources.find((s) => s.id === sourceId);
       if (!targetSource) {
         throw new Error('指定された画面が見つかりません');
       }
@@ -136,7 +135,6 @@ class CaptureService {
 
       console.log(`High-resolution screenshot captured: ${filePath}`);
       return filePath;
-
     } catch (error) {
       console.error('Failed to capture high-resolution screen:', error);
       throw new Error(`高解像度スクリーンショットの取得に失敗しました: ${error.message}`);
@@ -144,9 +142,9 @@ class CaptureService {
   }
 
   /**
-     * マルチディスプレイ対応：すべての画面をキャプチャ
-     * @returns {Promise<Array<object>>} キャプチャされた画像の配列
-     */
+   * マルチディスプレイ対応：すべての画面をキャプチャ
+   * @returns {Promise<Array<object>>} キャプチャされた画像の配列
+   */
   async captureAllScreens() {
     try {
       const sources = await this.getAvailableSources();
@@ -173,10 +171,10 @@ class CaptureService {
   }
 
   /**
-     * 指定された一時ファイルを削除
-     * @param {string} filePath - 削除するファイルのパス
-     * @returns {Promise<void>}
-     */
+   * 指定された一時ファイルを削除
+   * @param {string} filePath - 削除するファイルのパス
+   * @returns {Promise<void>}
+   */
   async deleteTempFile(filePath) {
     try {
       if (this.tempFiles.has(filePath)) {
@@ -190,11 +188,11 @@ class CaptureService {
   }
 
   /**
-     * すべての一時ファイルを削除
-     * @returns {Promise<void>}
-     */
+   * すべての一時ファイルを削除
+   * @returns {Promise<void>}
+   */
   async cleanupTempFiles() {
-    const deletePromises = Array.from(this.tempFiles).map(filePath =>
+    const deletePromises = Array.from(this.tempFiles).map((filePath) =>
       this.deleteTempFile(filePath),
     );
 
@@ -204,19 +202,19 @@ class CaptureService {
   }
 
   /**
-     * 範囲選択キャプチャ（将来実装）
-     * @param {object} bounds - 選択範囲 {x, y, width, height}
-     * @returns {Promise<string>} キャプチャされた画像のファイルパス
-     */
+   * 範囲選択キャプチャ（将来実装）
+   * @param {object} bounds - 選択範囲 {x, y, width, height}
+   * @returns {Promise<string>} キャプチャされた画像のファイルパス
+   */
   async captureRegion(_bounds) {
     // TODO: 範囲選択UIの実装が必要
     throw new Error('範囲選択キャプチャは未実装です');
   }
 
   /**
-     * サービスの終了処理
-     * @returns {Promise<void>}
-     */
+   * サービスの終了処理
+   * @returns {Promise<void>}
+   */
   async shutdown() {
     await this.cleanupTempFiles();
     console.log('CaptureService shutdown completed');
