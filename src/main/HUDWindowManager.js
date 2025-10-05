@@ -317,6 +317,140 @@ class HUDWindowManager {
   }
 
   /**
+   * 翻訳結果を表示するHUDウィンドウを表示（タスク3.4用）
+   *
+   * @param {Object} mousePosition - マウス座標
+   * @param {Object} translationData - 翻訳データ
+   * @returns {Promise<void>}
+   */
+  async showHUDWithTranslation(mousePosition, translationData) {
+    // HUDウィンドウを作成または取得
+    if (!this.hudWindow || this.hudWindow.isDestroyed()) {
+      await this.createHUDWindow();
+    }
+
+    // 翻訳データをレンダラープロセスに送信
+    await this.hudWindow.webContents.executeJavaScript(`
+      if (window.updateTranslationDisplay) {
+        window.updateTranslationDisplay(${JSON.stringify(translationData)});
+      } else {
+        // フォールバック：HTMLコンテンツを直接更新
+        document.body.innerHTML = \`
+          <div class="hud-container">
+            <div class="hud-header">
+              <span class="language-info">${translationData.sourceLanguage || 'auto'} → ${translationData.targetLanguage || 'ja'}</span>
+              <span class="confidence">信頼度: ${translationData.confidence || 0}%</span>
+              <button class="close-button" onclick="require('electron').ipcRenderer.invoke('close-hud')">×</button>
+            </div>
+            <div class="translation-content">
+              <div class="original-text">
+                <label>原文:</label>
+                <p>${translationData.originalText || ''}</p>
+              </div>
+              <div class="translated-text">
+                <label>翻訳:</label>
+                <p>${translationData.translatedText || ''}</p>
+              </div>
+            </div>
+            <div class="hud-actions">
+              <button onclick="navigator.clipboard.writeText('${translationData.translatedText}')">コピー</button>
+              <button onclick="require('electron').ipcRenderer.invoke('close-hud')">閉じる</button>
+            </div>
+          </div>
+        \`;
+      }
+    `);
+
+    // マウス位置近傍に表示
+    await this.showHUDNearMouse(mousePosition);
+  }
+
+  /**
+   * エラー情報を表示するHUDウィンドウを表示（タスク3.4用）
+   *
+   * @param {Object} mousePosition - マウス座標
+   * @param {Object} errorData - エラーデータ
+   * @returns {Promise<void>}
+   */
+  async showHUDWithError(mousePosition, errorData) {
+    // HUDウィンドウを作成または取得
+    if (!this.hudWindow || this.hudWindow.isDestroyed()) {
+      await this.createHUDWindow();
+    }
+
+    // エラー情報をレンダラープロセスに送信
+    await this.hudWindow.webContents.executeJavaScript(`
+      if (window.updateErrorDisplay) {
+        window.updateErrorDisplay(${JSON.stringify(errorData)});
+      } else {
+        // フォールバック：HTMLコンテンツを直接更新
+        document.body.innerHTML = \`
+          <div class="hud-container error">
+            <div class="hud-header error">
+              <span class="error-icon">⚠️</span>
+              <span class="error-title">エラーが発生しました</span>
+              <button class="close-button" onclick="require('electron').ipcRenderer.invoke('close-hud')">×</button>
+            </div>
+            <div class="error-content">
+              <div class="error-message">
+                <p>${errorData.error || 'Unknown error'}</p>
+              </div>
+              <div class="error-details">
+                <small>フェーズ: ${errorData.phase || 'unknown'}</small>
+                <small>時刻: ${errorData.timestamp || new Date().toISOString()}</small>
+              </div>
+            </div>
+            <div class="hud-actions">
+              <button onclick="require('electron').ipcRenderer.invoke('execute-shortcut-workflow')">再試行</button>
+              <button onclick="require('electron').ipcRenderer.invoke('close-hud')">閉じる</button>
+            </div>
+          </div>
+        \`;
+      }
+    `);
+
+    // マウス位置近傍に表示
+    await this.showHUDNearMouse(mousePosition);
+  }
+
+  /**
+   * 現在表示中のコンテンツタイプを取得
+   * @returns {string} コンテンツタイプ ('empty', 'translation', 'error')
+   */
+  getCurrentContentType() {
+    if (!this.hudWindow || this.hudWindow.isDestroyed() || !this.isVisible) {
+      return 'empty';
+    }
+
+    // レンダラープロセスから現在のコンテンツタイプを取得
+    // この実装は後でより詳細に実装する予定
+    return 'unknown';
+  }
+
+  /**
+   * HUDの内容をクリア
+   */
+  async clearContent() {
+    if (!this.hudWindow || this.hudWindow.isDestroyed()) {
+      return;
+    }
+
+    await this.hudWindow.webContents.executeJavaScript(`
+      document.body.innerHTML = \`
+        <div class="hud-container">
+          <div class="hud-header">
+            <span>Shunyaku v2</span>
+            <button class="close-button" onclick="require('electron').ipcRenderer.invoke('close-hud')">×</button>
+          </div>
+          <div class="hud-content">
+            <p>準備完了</p>
+          </div>
+        </div>
+      \`;
+    `);
+  }
+
+  /**
    * ウィンドウリソースのクリーンアップ
    */
   destroy() {

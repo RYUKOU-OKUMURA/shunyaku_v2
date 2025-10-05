@@ -31,8 +31,44 @@
 
       <!-- HUDメインコンテンツ -->
       <div class="hud-content" id="hudContent">
-        <!-- 固定テキスト表示エリア（Phase 1用） -->
-        <div class="text-display-area">
+        <!-- 手動翻訳入力エリア（タスク2.5.1） -->
+        <div class="manual-input-area" id="manualInputArea">
+          <div class="input-section">
+            <label class="input-label" for="manualTextInput">翻訳するテキストを入力:</label>
+            <div class="input-container">
+              <textarea
+                class="manual-text-input"
+                id="manualTextInput"
+                placeholder="ここに翻訳したいテキストを入力してください..."
+                rows="3"
+                maxlength="5000"
+              ></textarea>
+              <div class="character-counter"><span id="characterCount">0</span> / 5000文字</div>
+            </div>
+          </div>
+
+          <!-- 翻訳ボタンとオプション（タスク2.5.2） -->
+          <div class="translate-section">
+            <div class="translate-options">
+              <select class="target-language-select" id="targetLanguageSelect">
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+                <option value="ko">한국어</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+            <button class="translate-btn" id="translateBtn" disabled>
+              <span class="btn-icon" id="translateBtnIcon">🔄</span>
+              <span class="btn-text" id="translateBtnText">翻訳</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 翻訳結果表示エリア -->
+        <div class="text-display-area" id="textDisplayArea" style="display: none">
           <div class="original-text-section">
             <div class="text-label">原文:</div>
             <div class="text-content" id="originalText">
@@ -46,10 +82,24 @@
               こんにちは世界！これはHUD表示をテストするためのサンプルテキストです。
             </div>
           </div>
+
+          <!-- ローディングインジケーター（改善版） -->
+          <div class="loading-indicator" id="loadingIndicator" style="display: none">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">処理中...</div>
+          </div>
+
+          <!-- エラー表示（拡張機能付き） -->
+          <div class="error-display" id="errorDisplay" style="display: none">
+            <div class="error-icon">⚠️</div>
+            <div class="error-content">
+              <div class="error-message" id="errorMessage">エラーメッセージ</div>
+            </div>
+          </div>
         </div>
 
         <!-- 操作ボタンエリア -->
-        <div class="action-buttons">
+        <div class="action-buttons" id="actionButtons" style="display: none">
           <button class="action-btn copy-btn" id="copyBtn" title="翻訳文をコピー">
             <span class="btn-icon">📋</span>
             <span class="btn-text">コピー</span>
@@ -57,6 +107,10 @@
           <button class="action-btn refresh-btn" id="refreshBtn" title="再翻訳">
             <span class="btn-icon">🔄</span>
             <span class="btn-text">再翻訳</span>
+          </button>
+          <button class="action-btn new-translation-btn" id="newTranslationBtn" title="新しい翻訳">
+            <span class="btn-icon">➕</span>
+            <span class="btn-text">新規翻訳</span>
           </button>
         </div>
       </div>
