@@ -20,8 +20,8 @@ class LanguageDataManager {
   constructor() {
     this.tessdataPath = path.join(app.getPath('userData'), 'tessdata');
     this.languageDataUrls = {
-      'eng': 'https://tessdata.projectnaptha.com/4.0.0/eng.traineddata.gz',
-      'jpn': 'https://tessdata.projectnaptha.com/4.0.0/jpn.traineddata.gz',
+      eng: 'https://tessdata.projectnaptha.com/4.0.0/eng.traineddata.gz',
+      jpn: 'https://tessdata.projectnaptha.com/4.0.0/jpn.traineddata.gz',
     };
     this.supportedLanguages = ['eng', 'jpn'];
   }
@@ -38,7 +38,6 @@ class LanguageDataManager {
 
       // 必要な言語データをチェック・ダウンロード
       await this.ensureLanguageData();
-
     } catch (error) {
       console.error('Failed to initialize LanguageDataManager:', error);
       throw error;
@@ -85,7 +84,7 @@ class LanguageDataManager {
    * @private
    */
   async _downloadLanguageData(languages) {
-    const downloadPromises = languages.map(lang => this._downloadSingleLanguage(lang));
+    const downloadPromises = languages.map((lang) => this._downloadSingleLanguage(lang));
 
     try {
       await Promise.all(downloadPromises);
@@ -125,7 +124,6 @@ class LanguageDataManager {
 
       // ファイル内容の基本検証
       await this._validateLanguageFile(outputPath);
-
     } catch (error) {
       // エラー時は一時ファイルをクリーンアップ
       try {
@@ -230,7 +228,6 @@ class LanguageDataManager {
 
       // 簡単なマジックナンバーチェック（実際のtraineddataファイル形式に応じて調整）
       console.log(`Language file validation passed: ${path.basename(filePath)}`);
-
     } catch (error) {
       throw new Error(`Language file validation failed: ${error.message}`);
     }

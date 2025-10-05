@@ -8,6 +8,7 @@ const KeychainManager = require('../services/KeychainManager');
 const TranslationService = require('../services/TranslationService');
 const AppLifecycleManager = require('../services/AppLifecycleManager');
 const CaptureService = require('../services/CaptureService');
+const OCRService = require('../services/OCRService');
 
 /**
  * Shunyaku v2 - Main Process Entry Point
@@ -25,6 +26,7 @@ let keychainManager = null;
 let translationService = null;
 let appLifecycleManager = null;
 let captureService = null;
+let ocrService = null;
 
 /**
  * メインアプリケーションウィンドウを作成
@@ -75,6 +77,7 @@ app.whenReady().then(async () => {
   keychainManager = new KeychainManager();
   translationService = new TranslationService();
   captureService = new CaptureService();
+  ocrService = new OCRService();
 
   // AppLifecycleManagerを初期化（権限チェック）
   appLifecycleManager = new AppLifecycleManager();
@@ -715,6 +718,73 @@ function setupIPCHandlers() {
       };
     }
   });
+
+  // OCRサービス関連のIPC（タスク3.3）
+  ipcMain.handle('perform-ocr', async (event, imagePath, options = {}) => {
+    try {
+      if (!ocrService) {
+        throw new Error('OCRService not initialized');
+      }
+
+      const result = await ocrService.performOCR(imagePath, options);
+      return {
+        success: true,
+        result: result,
+      };
+    } catch (error) {
+      console.error('OCR failed:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('check-ocr-health', async () => {
+    try {
+      if (!ocrService) {
+        throw new Error('OCRService not initialized');
+      }
+
+      const health = await ocrService.performHealthCheck();
+      return {
+        success: true,
+        health: health,
+      };
+    } catch (error) {
+      console.error('OCR health check failed:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  // 完全フロー統合のIPC（タスク3.4）
+  ipcMain.handle('execute-full-workflow', async (event, options = {}) => {
+    return await executeFullTranslationWorkflow(options);
+  });
+
+  // ショートカット経由でのフロー実行
+  ipcMain.handle('execute-shortcut-workflow', async () => {
+    try {
+      const { screen } = require('electron');
+      const mousePosition = screen.getCursorScreenPoint();
+
+      const result = await executeFullTranslationWorkflow({
+        triggerMethod: 'shortcut',
+        mousePosition: mousePosition,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Shortcut workflow failed:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
 }
 
 /**
@@ -750,7 +820,7 @@ function getTranslationErrorType(error) {
 /**
  * アプリが終了する前の処理
  */
-app.on('before-quit', (_event) => {
+app.on('before-quit', async (_event) => {
   // ウィンドウのクリーンアップ
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.destroy();
@@ -771,6 +841,11 @@ app.on('before-quit', (_event) => {
   if (captureService) {
     captureService.shutdown();
     captureService = null;
+  }
+
+  if (ocrService) {
+    await ocrService.shutdown();
+    ocrService = null;
   }
 
   settingsStore = null;
@@ -805,3 +880,521 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // 本番環境では適切なエラーレポーティングを実装
 });
+
+/**
+ * 完全翻訳ワークフローの実行（タスク3.4メインメソッド）
+ * Capture → OCR → Translation → HUD表示の一連のフローを実行
+ *
+ * @param {Object} options - 実行オプション
+ * @param {string} options.triggerMethod - トリガー方法 ('shortcut', 'manual')
+ * @param {Object} options.mousePosition - マウス位置 {x, y}
+ * @param {string} options.sourceId - キャプチャソースID
+ * @returns {Promise<Object>} 結果オブジェクト
+ */
+async function executeFullTranslationWorkflow(options = {}) {
+  const startTime = Date.now();
+  const workflowId = `workflow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // パフォーマンス計測用指標
+  const performanceMetrics = {
+    workflowId: workflowId,
+    startTime: startTime,
+    triggerMethod: options.triggerMethod || 'unknown',
+    phases: {},
+    totalTime: null,
+    success: false,
+  };
+
+  try {
+    console.log(`✨ Starting full translation workflow [${workflowId}]`);
+    console.log('Options:', JSON.stringify(options, null, 2));
+
+    // Phase 1: 初期化チェック
+    const initStartTime = Date.now();
+    const initResult = await checkWorkflowPrerequisites();
+    performanceMetrics.phases.initialization = {
+      startTime: initStartTime,
+      duration: Date.now() - initStartTime,
+      success: initResult.success,
+    };
+
+    if (!initResult.success) {
+      throw new Error(`Initialization failed: ${initResult.error}`);
+    }
+
+    // Phase 2: スクリーンキャプチャ
+    const captureStartTime = Date.now();
+    console.log('📷 Phase 2: Screen capture starting...');
+
+    const imagePath = await captureService.captureScreen(options.sourceId);
+
+    if (!imagePath || typeof imagePath !== 'string') {
+      throw new Error('Screen capture failed: Invalid result');
+    }
+    performanceMetrics.phases.capture = {
+      startTime: captureStartTime,
+      duration: Date.now() - captureStartTime,
+      success: true,
+      imagePath: imagePath,
+    };
+
+    console.log(`✅ Screen capture completed: ${imagePath}`);
+
+    // Phase 3 & 4: OCRと翻訳サービス初期化の並列処理（パフォーマンス最適化）
+    const ocrStartTime = Date.now();
+    console.log('🔍 Phase 3: OCR processing starting...');
+
+    const translationSettings = settingsStore.getTranslationSettings();
+    const ocrLanguage = determineOCRLanguage(translationSettings);
+
+    // OCRと翻訳サービス初期化を並列実行
+    const [ocrResult, translationInitResult] = await Promise.allSettled([
+      ocrService.performOCR(imagePath, {
+        language: ocrLanguage,
+        preprocess: true,
+        minConfidence: 60,
+        returnDetails: true,
+      }),
+      translationService.isInitialized()
+        ? Promise.resolve(true)
+        : translationService.initialize(),
+    ]);
+
+    // OCR結果の処理
+    if (ocrResult.status === 'rejected' || !ocrResult.value.success) {
+      throw new Error(`OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`);
+    }
+
+    const ocrData = ocrResult.value;
+    if (!ocrData.text || ocrData.text.trim().length === 0) {
+      throw new Error('OCR failed: No text detected');
+    }
+
+    performanceMetrics.phases.ocr = {
+      startTime: ocrStartTime,
+      duration: Date.now() - ocrStartTime,
+      success: true,
+      confidence: ocrData.confidence,
+      textLength: ocrData.text.length,
+    };
+
+    console.log(`✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`);
+
+    // 翻訳サービス初期化結果の確認
+    if (translationInitResult.status === 'rejected' || !translationInitResult.value) {
+      throw new Error('Translation service initialization failed');
+    }
+
+    // Phase 4: 翻訳処理
+    const translationStartTime = Date.now();
+    console.log('🌍 Phase 4: Translation starting...');
+
+    const translationResult = await translationService.translate(
+      ocrData.text,
+      'auto',
+      translationSettings.targetLanguage || 'ja',
+    );
+
+    performanceMetrics.phases.translation = {
+      startTime: translationStartTime,
+      duration: Date.now() - translationStartTime,
+      success: translationResult.success,
+      sourceLanguage: translationResult.sourceLanguage,
+      targetLanguage: translationResult.targetLanguage,
+    };
+
+    if (!translationResult.success) {
+      throw new Error(`Translation failed: ${translationResult.error}`);
+    }
+
+    console.log(`✅ Translation completed: "${translationResult.text.substring(0, 50)}..."`);
+
+    // Phase 5: HUD表示
+    const hudStartTime = Date.now();
+    console.log('💬 Phase 5: HUD display starting...');
+
+    const hudData = {
+      originalText: ocrData.text,
+      translatedText: translationResult.text,
+      sourceLanguage: translationResult.sourceLanguage,
+      targetLanguage: translationResult.targetLanguage,
+      confidence: ocrData.confidence,
+      workflowId: workflowId,
+      timestamp: new Date().toISOString(),
+    };
+
+    // HUDをマウス位置近くに表示
+    const mousePosition = options.mousePosition || require('electron').screen.getCursorScreenPoint();
+    await hudWindowManager.showHUDWithTranslation(mousePosition, hudData);
+
+    performanceMetrics.phases.hudDisplay = {
+      startTime: hudStartTime,
+      duration: Date.now() - hudStartTime,
+      success: true,
+      mousePosition: mousePosition,
+    };
+
+    console.log(`✅ HUD displayed at position (${mousePosition.x}, ${mousePosition.y})`);
+
+    // 一時ファイルのクリーンアップを並列で実行（パフォーマンス最適化）
+    const cleanupPromise = captureService.deleteTempFile(imagePath).catch(cleanupError => {
+      console.warn('Temp file cleanup warning:', cleanupError.message);
+    });
+
+    // 成功時のメトリクス納作
+    performanceMetrics.totalTime = Date.now() - startTime;
+    performanceMetrics.success = true;
+
+    console.log(`✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`);
+    logPerformanceMetrics(performanceMetrics);
+
+    // 非同期でクリーンアップを継続
+    cleanupPromise;
+
+    return {
+      success: true,
+      workflowId: workflowId,
+      result: {
+        original: ocrData.text,
+        translated: translationResult.text,
+        confidence: ocrData.confidence,
+        sourceLanguage: translationResult.sourceLanguage,
+        targetLanguage: translationResult.targetLanguage,
+      },
+      performance: performanceMetrics,
+      hudDisplayed: true,
+    };
+
+  } catch (error) {
+    // エラー時のメトリクス納作
+    performanceMetrics.totalTime = Date.now() - startTime;
+    performanceMetrics.success = false;
+    performanceMetrics.error = error.message;
+    performanceMetrics.errorType = categorizeError(error);
+
+    console.error(`❌ Workflow failed after ${performanceMetrics.totalTime}ms [${workflowId}]:`, error);
+    logPerformanceMetrics(performanceMetrics);
+
+    // HUDにエラー情報を表示
+    try {
+      const mousePosition = options.mousePosition || require('electron').screen.getCursorScreenPoint();
+      await hudWindowManager.showHUDWithError(mousePosition, {
+        error: getHumanReadableError(error, performanceMetrics.errorType),
+        workflowId: workflowId,
+        timestamp: new Date().toISOString(),
+        phase: getCurrentPhase(performanceMetrics),
+        errorType: performanceMetrics.errorType,
+        suggestions: getErrorSuggestions(performanceMetrics.errorType),
+      });
+    } catch (hudError) {
+      console.error('Failed to display error HUD:', hudError);
+    }
+
+    return {
+      success: false,
+      error: error.message,
+      errorType: performanceMetrics.errorType,
+      workflowId: workflowId,
+      performance: performanceMetrics,
+      phase: getCurrentPhase(performanceMetrics),
+    };
+  }
+}
+
+/**
+ * ワークフローの前提条件をチェック
+ * @returns {Promise<Object>} チェック結果
+ */
+async function checkWorkflowPrerequisites() {
+  const checks = {
+    permissions: false,
+    captureService: false,
+    ocrService: false,
+    translationService: false,
+    hudWindowManager: false,
+  };
+
+  try {
+    // 権限チェック
+    if (appLifecycleManager) {
+      checks.permissions = await appLifecycleManager.checkScreenRecordingPermission();
+    }
+
+    // サービス初期化チェック
+    checks.captureService = captureService !== null;
+    checks.ocrService = ocrService !== null;
+    checks.translationService = translationService !== null && translationService.isInitialized();
+    checks.hudWindowManager = hudWindowManager !== null;
+
+    const allPassed = Object.values(checks).every(check => check === true);
+
+    return {
+      success: allPassed,
+      checks: checks,
+      error: allPassed ? null : 'Some prerequisites are not met',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      checks: checks,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * OCR言語を翻訳設定から決定
+ * @param {Object} translationSettings - 翻訳設定
+ * @returns {string} OCR言語コード
+ */
+function determineOCRLanguage(translationSettings) {
+  const sourceLanguage = translationSettings.sourceLanguage || 'auto';
+
+  // 自動検出の場合は英日対応
+  if (sourceLanguage === 'auto') {
+    return 'eng+jpn';
+  }
+
+  // 具体的な言語が指定されている場合
+  switch (sourceLanguage) {
+  case 'en':
+    return 'eng';
+  case 'ja':
+    return 'jpn';
+  case 'ko':
+    return 'kor';
+  case 'zh':
+    return 'chi_sim';
+  default:
+    return 'eng+jpn'; // フォールバック
+  }
+}
+
+/**
+ * パフォーマンスメトリクスをログ出力
+ * @param {Object} metrics - パフォーマンス指標
+ */
+function logPerformanceMetrics(metrics) {
+  console.log('\n⚙️  Performance Metrics:');
+  console.log(`   • Workflow ID: ${metrics.workflowId}`);
+  console.log(`   • Total Time: ${metrics.totalTime}ms`);
+  console.log(`   • Success: ${metrics.success}`);
+  console.log(`   • Trigger: ${metrics.triggerMethod}`);
+
+  if (metrics.phases) {
+    console.log('   • Phase Breakdown:');
+    Object.entries(metrics.phases).forEach(([phase, data]) => {
+      console.log(`     - ${phase}: ${data.duration}ms (${data.success ? '✅' : '❌'})`);
+    });
+  }
+
+  if (!metrics.success && metrics.error) {
+    console.log(`   • Error: ${metrics.error}`);
+  }
+
+  // 6秒以内目標のチェック
+  if (metrics.totalTime > 6000) {
+    console.warn(`⚠️  Performance warning: Workflow took ${metrics.totalTime}ms (target: <6000ms)`);
+  } else if (metrics.success) {
+    console.log(`✅ Performance target met: ${metrics.totalTime}ms < 6000ms`);
+  }
+
+  console.log(''); // 空行
+}
+
+/**
+ * 現在のフェーズを特定
+ * @param {Object} metrics - パフォーマンス指標
+ * @returns {string} フェーズ名
+ */
+function getCurrentPhase(metrics) {
+  if (!metrics.phases) {
+    return 'unknown';
+  }
+
+  const phases = Object.keys(metrics.phases);
+  const lastPhase = phases[phases.length - 1];
+  return lastPhase || 'initialization';
+}
+
+/**
+ * エラーのカテゴリ分け（タスク3.4.3）
+ * @param {Error} error - エラーオブジェクト
+ * @returns {string} エラーカテゴリ
+ */
+function categorizeError(error) {
+  const message = error.message?.toLowerCase() || '';
+  const stack = error.stack?.toLowerCase() || '';
+
+  // 権限関連エラー
+  if (
+    message.includes('permission') ||
+    message.includes('access denied') ||
+    message.includes('screen recording')
+  ) {
+    return 'permission';
+  }
+
+  // APIキー関連エラー
+  if (
+    message.includes('api key') ||
+    message.includes('keychain') ||
+    message.includes('401') ||
+    message.includes('403')
+  ) {
+    return 'api_key';
+  }
+
+  // ネットワークエラー
+  if (
+    message.includes('network') ||
+    message.includes('timeout') ||
+    message.includes('connection') ||
+    message.includes('enotfound') ||
+    message.includes('econnreset')
+  ) {
+    return 'network';
+  }
+
+  // OCR関連エラー
+  if (
+    message.includes('ocr') ||
+    message.includes('tesseract') ||
+    message.includes('no text detected') ||
+    stack.includes('ocrservice')
+  ) {
+    return 'ocr';
+  }
+
+  // キャプチャ関連エラー
+  if (
+    message.includes('capture') ||
+    message.includes('screenshot') ||
+    stack.includes('captureservice')
+  ) {
+    return 'capture';
+  }
+
+  // 翻訳関連エラー
+  if (
+    message.includes('translation') ||
+    message.includes('deepl') ||
+    message.includes('429') ||
+    stack.includes('translationservice')
+  ) {
+    return 'translation';
+  }
+
+  // リソース関連エラー
+  if (
+    message.includes('memory') ||
+    message.includes('disk') ||
+    message.includes('enospc')
+  ) {
+    return 'resource';
+  }
+
+  // 初期化エラー
+  if (
+    message.includes('initialization') ||
+    message.includes('not initialized') ||
+    message.includes('setup')
+  ) {
+    return 'initialization';
+  }
+
+  return 'unknown';
+}
+
+/**
+ * ユーザーフレンドリーなエラーメッセージを生成
+ * @param {Error} error - エラーオブジェクト
+ * @param {string} errorType - エラーカテゴリ
+ * @returns {string} ユーザーフレンドリーなメッセージ
+ */
+function getHumanReadableError(error, errorType) {
+  const baseMessage = error.message || '不明なエラーが発生しました';
+
+  switch (errorType) {
+  case 'permission':
+    return 'スクリーンキャプチャの権限が不足しています。システム環境設定で権限を許可してください。';
+
+  case 'api_key':
+    return 'DeepL APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
+
+  case 'network':
+    return 'ネットワーク接続に問題があります。インターネット接続を確認してください。';
+
+  case 'ocr':
+    return 'テキスト認識（OCR）に失敗しました。画像が鮮明か、テキストが読み取りやすいか確認してください。';
+
+  case 'capture':
+    return 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
+
+  case 'translation':
+    return '翻訳サービスに問題があります。APIキーや使用量を確認してください。';
+
+  case 'resource':
+    return 'システムリソースが不足しています。メモリやディスク容量を確認してください。';
+
+  case 'initialization':
+    return 'アプリケーションの初期化に失敗しました。アプリを再起動してください。';
+
+  default:
+    return baseMessage.length > 100 ? baseMessage.substring(0, 100) + '...' : baseMessage;
+  }
+}
+
+/**
+ * エラータイプ別の解決提案を生成
+ * @param {string} errorType - エラーカテゴリ
+ * @returns {string[]} 解決提案の配列
+ */
+function getErrorSuggestions(errorType) {
+  switch (errorType) {
+  case 'permission':
+    return [
+      'システム環境設定を開いて、プライバシーとセキュリティからスクリーン録画権限を許可',
+      'アプリを再起動して権限を再確認',
+    ];
+
+  case 'api_key':
+    return [
+      '設定画面からDeepL APIキーを正しく入力',
+      'DeepLのアカウント情報とAPIキーの有効性を確認',
+    ];
+
+  case 'network':
+    return [
+      'インターネット接続を確認',
+      'ファイアウォール設定でアプリを許可',
+      'しばらく時間を置いてから再試行',
+    ];
+
+  case 'ocr':
+    return [
+      'より鮮明な画像や高解像度のスクリーンショットを使用',
+      '文字サイズが大きい範囲を選択',
+      '背景と文字のコントラストが高い範囲を選択',
+    ];
+
+  case 'capture':
+    return [
+      'スクリーンキャプチャの権限を再確認',
+      'アプリを再起動',
+    ];
+
+  case 'translation':
+    return [
+      'DeepL APIの使用量を確認',
+      'APIキーの有効性を確認',
+      'しばらく時間を置いてから再試行',
+    ];
+
+  default:
+    return [
+      'アプリを再起動してみてください',
+      '問題が続く場合はサポートにお問い合わせください',
+    ];
+  }
+}

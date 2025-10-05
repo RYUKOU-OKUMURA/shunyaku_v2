@@ -502,6 +502,101 @@
     }
   }
 
+  // 完全フロー用の翻訳結果表示（タスク3.4用）
+  function updateTranslationDisplay(translationData) {
+    try {
+      // 入力モードを非表示
+      if (elements.manualInputArea) {
+        elements.manualInputArea.style.display = 'none';
+      }
+
+      // 結果表示エリアを表示
+      if (elements.textDisplayArea) {
+        elements.textDisplayArea.style.display = 'flex';
+      }
+      if (elements.actionButtons) {
+        elements.actionButtons.style.display = 'flex';
+      }
+
+      // テキスト内容を更新
+      if (elements.originalText && translationData.originalText) {
+        elements.originalText.textContent = translationData.originalText;
+      }
+      if (elements.translatedText && translationData.translatedText) {
+        elements.translatedText.textContent = translationData.translatedText;
+      }
+
+      // ステータスを更新
+      const confidence = translationData.confidence || 0;
+      const languageInfo = `${translationData.sourceLanguage || 'auto'} → ${translationData.targetLanguage || 'ja'}`;
+      updateStatus(
+        'ready',
+        `翻訳完了 (${languageInfo}, 信頼度: ${confidence}%)`,
+      );
+
+      hideLoading();
+      hideError();
+
+      console.log('Translation display updated successfully:', translationData);
+    } catch (error) {
+      console.error('Failed to update translation display:', error);
+      showError('翻訳結果の表示に失敗しました');
+    }
+  }
+
+  // エラー表示の更新（タスク3.4用）
+  function updateErrorDisplay(errorData) {
+    try {
+      // 入力モードを非表示
+      if (elements.manualInputArea) {
+        elements.manualInputArea.style.display = 'none';
+      }
+
+      // エラーを表示
+      showError(errorData.error || '不明なエラーが発生しました');
+
+      const phase = errorData.phase || 'unknown';
+      updateStatus('error', `エラー発生: ${phase}フェーズ`);
+
+      console.log('Error display updated:', errorData);
+    } catch (error) {
+      console.error('Failed to update error display:', error);
+    }
+  }
+
+  // ワークフロー実行の開始
+  async function executeFullWorkflow() {
+    try {
+      updateStatus('processing', '完全フロー実行中...');
+      // showLoading(); // 暂定的にコメントアウト
+
+      const result = await window.electronAPI.executeFullWorkflow({
+        triggerMethod: 'manual',
+      });
+
+      if (result.success) {
+        updateTranslationDisplay({
+          originalText: result.result.original,
+          translatedText: result.result.translated,
+          sourceLanguage: result.result.sourceLanguage,
+          targetLanguage: result.result.targetLanguage,
+          confidence: result.result.confidence,
+        });
+      } else {
+        updateErrorDisplay({
+          error: result.error,
+          phase: result.phase,
+        });
+      }
+    } catch (error) {
+      console.error('Full workflow execution failed:', error);
+      updateErrorDisplay({
+        error: 'ワークフローの実行に失敗しました',
+        phase: 'execution',
+      });
+    }
+  }
+
   // 外部から呼び出し可能な関数をグローバルに公開
   window.HUD = {
     updateTextContent,
@@ -512,7 +607,12 @@
     minimize: minimizeHUD,
     showManualInputMode,
     performTranslation,
+    executeFullWorkflow,
   };
+
+  // タスク3.4用のグローバル関数
+  window.updateTranslationDisplay = updateTranslationDisplay;
+  window.updateErrorDisplay = updateErrorDisplay;
 
   // DOMが読み込まれたら初期化実行
   if (document.readyState === 'loading') {

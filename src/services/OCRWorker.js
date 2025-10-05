@@ -122,7 +122,6 @@ if (isMainThread) {
   }
 
   module.exports = OCRWorker;
-
 } else {
   /**
    * Worker Thread: OCR処理の実装
@@ -141,11 +140,7 @@ if (isMainThread) {
         break;
 
       case 'recognize': {
-        const result = await performOCR(
-          message.imagePath,
-          message.language,
-          message.options,
-        );
+        const result = await performOCR(message.imagePath, message.language, message.options);
         parentPort.postMessage({
           type: 'recognition-complete',
           result,
@@ -168,7 +163,7 @@ if (isMainThread) {
    * Tesseract.jsワーカーを初期化
    * @param {string} tessdataPath - tessdataディレクトリパス
    */
-  const initializeTesseract = async function(tessdataPath) {
+  const initializeTesseract = async function (tessdataPath) {
     if (tesseractWorker) {
       return;
     }
@@ -198,7 +193,7 @@ if (isMainThread) {
    * @param {Object} options - オプション
    * @returns {Promise<Object>} OCR結果
    */
-  const performOCR = async function(imagePath, language, options = {}) {
+  const performOCR = async function (imagePath, language, options = {}) {
     if (!tesseractWorker) {
       throw new Error('Tesseract worker not initialized');
     }
@@ -221,7 +216,7 @@ if (isMainThread) {
     const result = {
       text: data.text.trim(),
       confidence: data.confidence,
-      words: data.words.map(word => ({
+      words: data.words.map((word) => ({
         text: word.text,
         confidence: word.confidence,
         bbox: {
@@ -231,7 +226,7 @@ if (isMainThread) {
           y1: word.bbox.y1,
         },
       })),
-      blocks: data.blocks.map(block => ({
+      blocks: data.blocks.map((block) => ({
         text: block.text,
         confidence: block.confidence,
         bbox: {

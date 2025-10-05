@@ -90,8 +90,8 @@ class ImagePreprocessor {
       // 2. コントラスト強化
       if (config.enhanceContrast) {
         processor = processor.normalize({
-          lower: 1,  // 最暗点を調整
-          upper: 99,  // 最明点を調整
+          lower: 1, // 最暗点を調整
+          upper: 99, // 最明点を調整
         });
         console.log('Applied contrast enhancement');
       }
@@ -99,9 +99,9 @@ class ImagePreprocessor {
       // 3. シャープ化（文字認識向上）
       if (config.sharpen) {
         processor = processor.sharpen({
-          sigma: 1.0,      // シャープ化の強度
-          flat: 1.0,       // フラット領域の閾値
-          jagged: 2.0,      // エッジの閾値
+          sigma: 1.0, // シャープ化の強度
+          flat: 1.0, // フラット領域の閾値
+          jagged: 2.0, // エッジの閾値
         });
         console.log('Applied sharpening');
       }
@@ -118,7 +118,7 @@ class ImagePreprocessor {
         processor = processor.png({
           quality: 100,
           compressionLevel: 0, // 無圧縮（OCR精度優先）
-          palette: false,       // フルカラー
+          palette: false, // フルカラー
         });
         break;
       case 'jpg':
@@ -140,11 +140,12 @@ class ImagePreprocessor {
 
       // 処理結果の確認
       const outputMetadata = await sharp(outputPath).metadata();
-      console.log(`Processed image: ${outputMetadata.width}x${outputMetadata.height}, ${outputMetadata.format}`);
+      console.log(
+        `Processed image: ${outputMetadata.width}x${outputMetadata.height}, ${outputMetadata.format}`,
+      );
       console.log(`Processing completed in ${processingTime}ms`);
 
       return outputPath;
-
     } catch (error) {
       console.error('Image preprocessing failed:', error);
       throw new Error(`Image preprocessing failed: ${error.message}`);
@@ -217,7 +218,7 @@ class ImagePreprocessor {
   async cleanupAllTempFiles() {
     try {
       const files = await fs.readdir(this.tempDir);
-      const cleanupPromises = files.map(file =>
+      const cleanupPromises = files.map((file) =>
         this.cleanupTempFile(path.join(this.tempDir, file)),
       );
       await Promise.all(cleanupPromises);
@@ -257,7 +258,6 @@ class ImagePreprocessor {
       if (!metadata.width || !metadata.height) {
         throw new Error('Invalid image file');
       }
-
     } catch (error) {
       throw new Error(`Invalid input file: ${error.message}`);
     }

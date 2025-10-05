@@ -94,11 +94,9 @@ class OCRService {
       }
 
       // OCR実行
-      const result = await this.ocrWorker.recognize(
-        processedImagePath,
-        config.language,
-        { startTime: config.startTime },
-      );
+      const result = await this.ocrWorker.recognize(processedImagePath, config.language, {
+        startTime: config.startTime,
+      });
 
       // 結果の後処理と信頼度チェック
       const processedResult = await this._processOCRResult(result, config);
@@ -109,7 +107,6 @@ class OCRService {
       }
 
       return processedResult;
-
     } catch (error) {
       console.error('OCR extraction failed:', error);
       throw error;
@@ -193,7 +190,6 @@ class OCRService {
       console.log(`OCR completed in ${result.totalTime}ms with confidence: ${result.confidence}%`);
 
       return result;
-
     } catch (error) {
       console.error('OCR process failed:', error);
 
@@ -240,11 +236,10 @@ class OCRService {
 
       // 総合判定
       const componentStatuses = Object.values(healthStatus.components);
-      const allHealthy = componentStatuses.every(status => status === 'healthy');
-      const anyFailed = componentStatuses.some(status => status === 'failed');
+      const allHealthy = componentStatuses.every((status) => status === 'healthy');
+      const anyFailed = componentStatuses.some((status) => status === 'failed');
 
       healthStatus.overall = allHealthy ? 'healthy' : anyFailed ? 'failed' : 'warning';
-
     } catch (error) {
       healthStatus.overall = 'failed';
       healthStatus.error = error.message;
@@ -299,7 +294,6 @@ class OCRService {
       if (!supportedExt.includes(ext)) {
         throw new Error(`Unsupported file format: ${ext}`);
       }
-
     } catch (error) {
       throw new Error(`Invalid image file: ${error.message}`);
     }
@@ -337,7 +331,6 @@ class OCRService {
 
       console.log(`Image preprocessed (${preprocessingType}): ${path.basename(processedPath)}`);
       return processedPath;
-
     } catch (error) {
       console.warn('Image preprocessing failed, using original:', error.message);
       return imagePath;
@@ -409,20 +402,20 @@ class OCRService {
 
     // 単語レベル信頼度統計
     if (result.words && result.words.length > 0) {
-      const wordConfidences = result.words.map(word => word.confidence);
+      const wordConfidences = result.words.map((word) => word.confidence);
       analysis.wordLevelStats = {
         count: wordConfidences.length,
         min: Math.min(...wordConfidences),
         max: Math.max(...wordConfidences),
         average: wordConfidences.reduce((a, b) => a + b, 0) / wordConfidences.length,
         median: this._calculateMedian(wordConfidences),
-        belowThreshold: wordConfidences.filter(conf => conf < config.minConfidence).length,
+        belowThreshold: wordConfidences.filter((conf) => conf < config.minConfidence).length,
       };
     }
 
     // ブロックレベル信頼度統計
     if (result.blocks && result.blocks.length > 0) {
-      const blockConfidences = result.blocks.map(block => block.confidence);
+      const blockConfidences = result.blocks.map((block) => block.confidence);
       analysis.blockLevelStats = {
         count: blockConfidences.length,
         min: Math.min(...blockConfidences),
@@ -444,10 +437,18 @@ class OCRService {
    * @private
    */
   _getConfidenceRating(confidence) {
-    if (confidence >= 90) {return 'excellent';}
-    if (confidence >= 80) {return 'good';}
-    if (confidence >= 70) {return 'fair';}
-    if (confidence >= 60) {return 'poor';}
+    if (confidence >= 90) {
+      return 'excellent';
+    }
+    if (confidence >= 80) {
+      return 'good';
+    }
+    if (confidence >= 70) {
+      return 'fair';
+    }
+    if (confidence >= 60) {
+      return 'poor';
+    }
     return 'very-poor';
   }
 
@@ -460,9 +461,7 @@ class OCRService {
   _calculateMedian(values) {
     const sorted = [...values].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 === 0
-      ? (sorted[mid - 1] + sorted[mid]) / 2
-      : sorted[mid];
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
   }
 
   /**
@@ -585,7 +584,6 @@ class OCRService {
       }
 
       return 'healthy';
-
     } catch (error) {
       console.error('Language data check failed:', error);
       return 'failed';
@@ -606,7 +604,6 @@ class OCRService {
       // Worker応答テスト（簡単なping相当）
       // 実際の実装では、Workerに対してpingメッセージを送信して応答を確認
       return 'healthy';
-
     } catch (error) {
       console.error('Worker check failed:', error);
       return 'failed';
@@ -628,7 +625,6 @@ class OCRService {
       });
 
       return result.success && result.text.length > 0 ? 'healthy' : 'warning';
-
     } catch (error) {
       console.error('OCR execution check failed:', error);
       return 'failed';
