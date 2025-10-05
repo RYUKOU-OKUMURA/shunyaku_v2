@@ -134,7 +134,7 @@ class AppLifecycleManager {
         screenRecording: await this.checkScreenRecordingPermission(),
       };
 
-      const allGranted = Object.values(permissions).every(granted => granted);
+      const allGranted = Object.values(permissions).every((granted) => granted);
 
       console.log('AppLifecycleManager: 権限チェック結果', {
         screenRecording: permissions.screenRecording,
@@ -209,10 +209,13 @@ class AppLifecycleManager {
       const majorVersion = parseInt(osVersion.split('.')[0]);
 
       let settingsUrl;
-      if (majorVersion >= 22) { // macOS 13.0 Ventura以降
-        settingsUrl = 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture';
+      if (majorVersion >= 22) {
+        // macOS 13.0 Ventura以降
+        settingsUrl =
+          'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture';
       } else {
-        settingsUrl = 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture';
+        settingsUrl =
+          'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture';
       }
 
       await shell.openExternal(settingsUrl);
@@ -251,7 +254,9 @@ class AppLifecycleManager {
             await this.restartApp();
           } else {
             this.retryConfig.currentRetries++;
-            console.log(`AppLifecycleManager: 権限チェック中... (${this.retryConfig.currentRetries}/${this.retryConfig.maxRetries})`);
+            console.log(
+              `AppLifecycleManager: 権限チェック中... (${this.retryConfig.currentRetries}/${this.retryConfig.maxRetries})`,
+            );
 
             // 最大リトライ回数に達した場合
             if (this.retryConfig.currentRetries >= this.retryConfig.maxRetries) {
@@ -264,7 +269,6 @@ class AppLifecycleManager {
           console.error('AppLifecycleManager: 権限チェック中にエラー', error);
         }
       }, this.retryConfig.retryDelay);
-
     } catch (error) {
       console.error('AppLifecycleManager: 権限待機エラー', error);
       this.isWaitingForRestart = false;
