@@ -83,17 +83,18 @@
             </div>
           </div>
 
-          <!-- ローディングインジケーター（タスク2.5.5） -->
+          <!-- ローディングインジケーター（改善版） -->
           <div class="loading-indicator" id="loadingIndicator" style="display: none">
             <div class="loading-spinner"></div>
-            <div class="loading-text">翻訳中...</div>
+            <div class="loading-text">処理中...</div>
           </div>
 
-          <!-- エラー表示（タスク2.5.6） -->
+          <!-- エラー表示（拡張機能付き） -->
           <div class="error-display" id="errorDisplay" style="display: none">
             <div class="error-icon">⚠️</div>
-            <div class="error-message" id="errorMessage">エラーメッセージ</div>
-            <button class="retry-btn" id="retryBtn">再試行</button>
+            <div class="error-content">
+              <div class="error-message" id="errorMessage">エラーメッセージ</div>
+            </div>
           </div>
         </div>
 
