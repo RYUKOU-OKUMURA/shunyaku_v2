@@ -193,7 +193,7 @@ class CaptureService {
    */
   async cleanupTempFiles() {
     const deletePromises = Array.from(this.tempFiles).map((filePath) =>
-      this.deleteTempFile(filePath),
+      this.deleteTempFile(filePath)
     );
 
     await Promise.allSettled(deletePromises);

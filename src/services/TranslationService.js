@@ -55,7 +55,7 @@ class TranslationService {
 
       if (!apiKey) {
         throw new Error(
-          'DeepL APIキーがKeychainに見つかりません。設定画面でAPIキーを入力してください。',
+          'DeepL APIキーがKeychainに見つかりません。設定画面でAPIキーを入力してください。'
         );
       }
 
@@ -146,7 +146,7 @@ class TranslationService {
           text,
           sourceLanguage,
           targetLanguage,
-          translationOptions,
+          translationOptions
         );
 
         const endTime = Date.now();
@@ -186,7 +186,7 @@ class TranslationService {
 
         // 指数バックオフでリトライ待機
         this.logger.warn(
-          `[TranslationService] 翻訳失敗（試行${attempt + 1}/${this.maxRetries + 1}）: ${error.message}, ${retryDelay}ms後にリトライします`,
+          `[TranslationService] 翻訳失敗（試行${attempt + 1}/${this.maxRetries + 1}）: ${error.message}, ${retryDelay}ms後にリトライします`
         );
 
         await this._sleep(retryDelay);

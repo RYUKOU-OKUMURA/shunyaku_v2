@@ -442,20 +442,20 @@
     // エラー種別に応じてユーザーフレンドリーなメッセージに変換
     if (errorType) {
       switch (errorType) {
-      case 'api_key':
-        displayMessage =
+        case 'api_key':
+          displayMessage =
             'APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
-        break;
-      case 'quota_exceeded':
-        displayMessage =
+          break;
+        case 'quota_exceeded':
+          displayMessage =
             'API使用量の上限に達しました。しばらく時間をおいてから再試行してください。';
-        break;
-      case 'network':
-        displayMessage = 'ネットワークエラーです。インターネット接続を確認してください。';
-        break;
-      case 'validation':
-        displayMessage = '入力テキストに問題があります。内容を確認してください。';
-        break;
+          break;
+        case 'network':
+          displayMessage = 'ネットワークエラーです。インターネット接続を確認してください。';
+          break;
+        case 'validation':
+          displayMessage = '入力テキストに問題があります。内容を確認してください。';
+          break;
       }
     }
 
