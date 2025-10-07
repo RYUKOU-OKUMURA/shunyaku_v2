@@ -9,6 +9,7 @@ const TranslationService = require('../services/TranslationService');
 const AppLifecycleManager = require('../services/AppLifecycleManager');
 const CaptureService = require('../services/CaptureService');
 const OCRService = require('../services/OCRService');
+const GlobalShortcutManager = require('../services/GlobalShortcutManager');
 
 /**
  * Shunyaku v2 - Main Process Entry Point
@@ -27,6 +28,7 @@ let translationService = null;
 let appLifecycleManager = null;
 let captureService = null;
 let ocrService = null;
+let globalShortcutManager = null;
 
 /**
  * メインアプリケーションウィンドウを作成
@@ -92,6 +94,10 @@ app.whenReady().then(async () => {
 
   // HUDウィンドウマネージャーを初期化
   hudWindowManager = new HUDWindowManager();
+
+  // グローバルショートカットマネージャーを初期化
+  globalShortcutManager = new GlobalShortcutManager();
+  await initializeGlobalShortcuts();
 
   // メニューバーの設定（macOS用）
   setupApplicationMenu();
@@ -481,7 +487,7 @@ function setupIPCHandlers() {
           errorType: getTranslationErrorType(error),
         };
       }
-    }
+    },
   );
 
   // 翻訳設定の取得
@@ -785,6 +791,120 @@ function setupIPCHandlers() {
       };
     }
   });
+
+  // グローバルショートカット関連のIPC（タスク3.6）
+  ipcMain.handle('get-registered-shortcuts', async () => {
+    try {
+      if (globalShortcutManager) {
+        const shortcuts = globalShortcutManager.getRegisteredShortcuts();
+        return {
+          success: true,
+          shortcuts: shortcuts,
+        };
+      } else {
+        throw new Error('GlobalShortcutManager not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to get registered shortcuts:', error);
+      return {
+        success: false,
+        shortcuts: {},
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('get-available-shortcuts', async () => {
+    try {
+      if (globalShortcutManager) {
+        const shortcuts = globalShortcutManager.getAvailableShortcuts();
+        return {
+          success: true,
+          shortcuts: shortcuts,
+        };
+      } else {
+        throw new Error('GlobalShortcutManager not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to get available shortcuts:', error);
+      return {
+        success: false,
+        shortcuts: {},
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('test-shortcut-availability', async (event, accelerator) => {
+    try {
+      if (globalShortcutManager) {
+        const isAvailable = globalShortcutManager.isAcceleratorAvailable(accelerator);
+        const isValid = globalShortcutManager.validateAccelerator(accelerator);
+
+        return {
+          success: true,
+          available: isAvailable,
+          valid: isValid,
+        };
+      } else {
+        throw new Error('GlobalShortcutManager not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to test shortcut availability:', error);
+      return {
+        success: false,
+        available: false,
+        valid: false,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('update-global-shortcuts', async (event, newShortcutSettings) => {
+    try {
+      if (globalShortcutManager) {
+        const success = await globalShortcutManager.updateShortcuts(newShortcutSettings);
+
+        if (success) {
+          // 設定ストアも更新
+          settingsStore.setShortcutSettings(newShortcutSettings);
+        }
+
+        return {
+          success: success,
+        };
+      } else {
+        throw new Error('GlobalShortcutManager not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to update global shortcuts:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('get-shortcut-debug-info', async () => {
+    try {
+      if (globalShortcutManager) {
+        const debugInfo = globalShortcutManager.getDebugInfo();
+        return {
+          success: true,
+          debugInfo: debugInfo,
+        };
+      } else {
+        throw new Error('GlobalShortcutManager not initialized');
+      }
+    } catch (error) {
+      console.error('Failed to get shortcut debug info:', error);
+      return {
+        success: false,
+        debugInfo: {},
+        error: error.message,
+      };
+    }
+  });
 }
 
 /**
@@ -848,6 +968,11 @@ app.on('before-quit', async (_event) => {
     ocrService = null;
   }
 
+  if (globalShortcutManager) {
+    await globalShortcutManager.shutdown();
+    globalShortcutManager = null;
+  }
+
   settingsStore = null;
   keychainManager = null;
   translationService = null;
@@ -880,6 +1005,153 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // 本番環境では適切なエラーレポーティングを実装
 });
+
+/**
+ * グローバルショートカットの初期化（タスク3.6.1-3.6.3）
+ * GlobalShortcutManagerを初期化し、各ショートカットにコールバックを設定
+ *
+ * @returns {Promise<void>}
+ */
+async function initializeGlobalShortcuts() {
+  try {
+    console.log('🎯 Initializing global shortcuts...');
+
+    // ショートカットコールバックの定義
+    const shortcutCallbacks = {
+      translate: handleTranslateShortcut,
+      showSettings: handleShowSettingsShortcut,
+      toggleHUD: handleToggleHUDShortcut,
+    };
+
+    // GlobalShortcutManagerを初期化
+    const success = await globalShortcutManager.initialize(settingsStore, shortcutCallbacks);
+
+    if (success) {
+      console.log('✅ Global shortcuts initialized successfully');
+
+      // 設定変更時のリスナーを登録
+      setupShortcutSettingsListener();
+    } else {
+      console.error('❌ Failed to initialize global shortcuts');
+    }
+  } catch (error) {
+    console.error('❌ Global shortcut initialization error:', error);
+  }
+}
+
+/**
+ * 翻訳ショートカットのコールバック（⌘⇧T）
+ * 完全翻訳ワークフローを実行
+ *
+ * @param {string} shortcutKey - ショートカット識別子
+ * @param {string} accelerator - アクセレレーター文字列
+ */
+async function handleTranslateShortcut(shortcutKey, accelerator) {
+  try {
+    console.log(`🎯 Translation shortcut activated: ${accelerator}`);
+
+    // 既存のHUDを閉じる
+    if (hudWindowManager) {
+      hudWindowManager.hideHUD();
+    }
+
+    // 完全翻訳ワークフローを実行
+    const { screen } = require('electron');
+    const mousePosition = screen.getCursorScreenPoint();
+
+    const result = await executeFullTranslationWorkflow({
+      triggerMethod: 'shortcut',
+      mousePosition: mousePosition,
+    });
+
+    if (!result.success) {
+      console.error('❌ Translation workflow failed from shortcut:', result.error);
+    }
+
+  } catch (error) {
+    console.error('❌ Translation shortcut error:', error);
+  }
+}
+
+/**
+ * 設定画面表示ショートカットのコールバック（⌘,）
+ *
+ * @param {string} shortcutKey - ショートカット識別子
+ * @param {string} accelerator - アクセレレーター文字列
+ */
+async function handleShowSettingsShortcut(shortcutKey, accelerator) {
+  try {
+    console.log(`🎯 Settings shortcut activated: ${accelerator}`);
+    createSettingsWindow();
+  } catch (error) {
+    console.error('❌ Settings shortcut error:', error);
+  }
+}
+
+/**
+ * HUD切り替えショートカットのコールバック（⌘⇧H）
+ *
+ * @param {string} shortcutKey - ショートカット識別子
+ * @param {string} accelerator - アクセレレーター文字列
+ */
+async function handleToggleHUDShortcut(shortcutKey, accelerator) {
+  try {
+    console.log(`🎯 HUD toggle shortcut activated: ${accelerator}`);
+
+    if (hudWindowManager) {
+      const isVisible = hudWindowManager.isHUDVisible();
+
+      if (isVisible) {
+        // HUDが表示されている場合は非表示
+        hudWindowManager.hideHUD();
+      } else {
+        // HUDが非表示の場合はマウス位置近くに表示
+        const { screen } = require('electron');
+        const mousePosition = screen.getCursorScreenPoint();
+
+        // サンプルデータでHUDを表示
+        await hudWindowManager.showHUDWithTranslation(mousePosition, {
+          originalText: 'Toggle shortcut activated',
+          translatedText: 'ショートカットが有効化されました',
+          sourceLanguage: 'en',
+          targetLanguage: 'ja',
+          confidence: 95,
+          workflowId: `toggle_${Date.now()}`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+  } catch (error) {
+    console.error('❌ HUD toggle shortcut error:', error);
+  }
+}
+
+/**
+ * ショートカット設定変更時のリスナーを設定
+ * 設定が変更されたときにショートカットを再登録
+ */
+function setupShortcutSettingsListener() {
+  try {
+    if (settingsStore) {
+      // 設定変更リスナーを登録
+      settingsStore.onDidChange('shortcuts', async (newShortcutSettings) => {
+        console.log('🔄 Shortcut settings changed, updating shortcuts...');
+
+        if (globalShortcutManager && globalShortcutManager.isInitialized) {
+          const success = await globalShortcutManager.updateShortcuts(newShortcutSettings);
+
+          if (success) {
+            console.log('✅ Shortcuts updated successfully');
+          } else {
+            console.error('❌ Failed to update shortcuts');
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.error('❌ Failed to setup shortcut settings listener:', error);
+  }
+}
 
 /**
  * 完全翻訳ワークフローの実行（タスク3.4メインメソッド）
@@ -961,7 +1233,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     // OCR結果の処理
     if (ocrResult.status === 'rejected' || !ocrResult.value.success) {
       throw new Error(
-        `OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`
+        `OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`,
       );
     }
 
@@ -979,7 +1251,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     };
 
     console.log(
-      `✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`
+      `✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`,
     );
 
     // 翻訳サービス初期化結果の確認
@@ -994,7 +1266,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     const translationResult = await translationService.translate(
       ocrData.text,
       'auto',
-      translationSettings.targetLanguage || 'ja'
+      translationSettings.targetLanguage || 'ja',
     );
 
     performanceMetrics.phases.translation = {
@@ -1049,7 +1321,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     performanceMetrics.success = true;
 
     console.log(
-      `✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`
+      `✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`,
     );
     logPerformanceMetrics(performanceMetrics);
 
@@ -1078,7 +1350,7 @@ async function executeFullTranslationWorkflow(options = {}) {
 
     console.error(
       `❌ Workflow failed after ${performanceMetrics.totalTime}ms [${workflowId}]:`,
-      error
+      error,
     );
     logPerformanceMetrics(performanceMetrics);
 
@@ -1165,16 +1437,16 @@ function determineOCRLanguage(translationSettings) {
 
   // 具体的な言語が指定されている場合
   switch (sourceLanguage) {
-    case 'en':
-      return 'eng';
-    case 'ja':
-      return 'jpn';
-    case 'ko':
-      return 'kor';
-    case 'zh':
-      return 'chi_sim';
-    default:
-      return 'eng+jpn'; // フォールバック
+  case 'en':
+    return 'eng';
+  case 'ja':
+    return 'jpn';
+  case 'ko':
+    return 'kor';
+  case 'zh':
+    return 'chi_sim';
+  default:
+    return 'eng+jpn'; // フォールバック
   }
 }
 
@@ -1320,32 +1592,32 @@ function getHumanReadableError(error, errorType) {
   const baseMessage = error.message || '不明なエラーが発生しました';
 
   switch (errorType) {
-    case 'permission':
-      return 'スクリーンキャプチャの権限が不足しています。システム環境設定で権限を許可してください。';
+  case 'permission':
+    return 'スクリーンキャプチャの権限が不足しています。システム環境設定で権限を許可してください。';
 
-    case 'api_key':
-      return 'DeepL APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
+  case 'api_key':
+    return 'DeepL APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
 
-    case 'network':
-      return 'ネットワーク接続に問題があります。インターネット接続を確認してください。';
+  case 'network':
+    return 'ネットワーク接続に問題があります。インターネット接続を確認してください。';
 
-    case 'ocr':
-      return 'テキスト認識（OCR）に失敗しました。画像が鮮明か、テキストが読み取りやすいか確認してください。';
+  case 'ocr':
+    return 'テキスト認識（OCR）に失敗しました。画像が鮮明か、テキストが読み取りやすいか確認してください。';
 
-    case 'capture':
-      return 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
+  case 'capture':
+    return 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
 
-    case 'translation':
-      return '翻訳サービスに問題があります。APIキーや使用量を確認してください。';
+  case 'translation':
+    return '翻訳サービスに問題があります。APIキーや使用量を確認してください。';
 
-    case 'resource':
-      return 'システムリソースが不足しています。メモリやディスク容量を確認してください。';
+  case 'resource':
+    return 'システムリソースが不足しています。メモリやディスク容量を確認してください。';
 
-    case 'initialization':
-      return 'アプリケーションの初期化に失敗しました。アプリを再起動してください。';
+  case 'initialization':
+    return 'アプリケーションの初期化に失敗しました。アプリを再起動してください。';
 
-    default:
-      return baseMessage.length > 100 ? baseMessage.substring(0, 100) + '...' : baseMessage;
+  default:
+    return baseMessage.length > 100 ? baseMessage.substring(0, 100) + '...' : baseMessage;
   }
 }
 
@@ -1356,39 +1628,39 @@ function getHumanReadableError(error, errorType) {
  */
 function getErrorSuggestions(errorType) {
   switch (errorType) {
-    case 'permission':
-      return [
-        'システム環境設定を開いて、プライバシーとセキュリティからスクリーン録画権限を許可',
-        'アプリを再起動して権限を再確認',
-      ];
+  case 'permission':
+    return [
+      'システム環境設定を開いて、プライバシーとセキュリティからスクリーン録画権限を許可',
+      'アプリを再起動して権限を再確認',
+    ];
 
-    case 'api_key':
-      return [
-        '設定画面からDeepL APIキーを正しく入力',
-        'DeepLのアカウント情報とAPIキーの有効性を確認',
-      ];
+  case 'api_key':
+    return [
+      '設定画面からDeepL APIキーを正しく入力',
+      'DeepLのアカウント情報とAPIキーの有効性を確認',
+    ];
 
-    case 'network':
-      return [
-        'インターネット接続を確認',
-        'ファイアウォール設定でアプリを許可',
-        'しばらく時間を置いてから再試行',
-      ];
+  case 'network':
+    return [
+      'インターネット接続を確認',
+      'ファイアウォール設定でアプリを許可',
+      'しばらく時間を置いてから再試行',
+    ];
 
-    case 'ocr':
-      return [
-        'より鮮明な画像や高解像度のスクリーンショットを使用',
-        '文字サイズが大きい範囲を選択',
-        '背景と文字のコントラストが高い範囲を選択',
-      ];
+  case 'ocr':
+    return [
+      'より鮮明な画像や高解像度のスクリーンショットを使用',
+      '文字サイズが大きい範囲を選択',
+      '背景と文字のコントラストが高い範囲を選択',
+    ];
 
-    case 'capture':
-      return ['スクリーンキャプチャの権限を再確認', 'アプリを再起動'];
+  case 'capture':
+    return ['スクリーンキャプチャの権限を再確認', 'アプリを再起動'];
 
-    case 'translation':
-      return ['DeepL APIの使用量を確認', 'APIキーの有効性を確認', 'しばらく時間を置いてから再試行'];
+  case 'translation':
+    return ['DeepL APIの使用量を確認', 'APIキーの有効性を確認', 'しばらく時間を置いてから再試行'];
 
-    default:
-      return ['アプリを再起動してみてください', '問題が続く場合はサポートにお問い合わせください'];
+  default:
+    return ['アプリを再起動してみてください', '問題が続く場合はサポートにお問い合わせください'];
   }
 }

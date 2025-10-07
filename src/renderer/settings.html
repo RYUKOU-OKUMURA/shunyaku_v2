@@ -93,6 +93,81 @@
           </div>
         </section>
 
+        <!-- Shortcut Settings (Task 3.6.4) -->
+        <section class="settings-section">
+          <h2>Shortcut Settings</h2>
+          
+          <div class="input-group">
+            <label for="shortcut-translate">Translation Shortcut</label>
+            <div class="shortcut-input-container">
+              <input 
+                type="text" 
+                id="shortcut-translate" 
+                name="shortcut-translate" 
+                class="shortcut-input" 
+                readonly
+                placeholder="Press keys to set shortcut..."
+                title="Click and press key combination to set translation shortcut"
+              >
+              <button type="button" class="btn btn-small btn-ghost shortcut-clear" data-target="shortcut-translate">
+                <span class="btn-icon">✕</span>
+              </button>
+            </div>
+            <small class="input-help">
+              Start screen capture, OCR, and translation workflow (Default: ⌘⇧T)
+            </small>
+          </div>
+
+          <div class="input-group">
+            <label for="shortcut-settings">Settings Shortcut</label>
+            <div class="shortcut-input-container">
+              <input 
+                type="text" 
+                id="shortcut-settings" 
+                name="shortcut-settings" 
+                class="shortcut-input" 
+                readonly
+                placeholder="Press keys to set shortcut..."
+                title="Click and press key combination to set settings shortcut"
+              >
+              <button type="button" class="btn btn-small btn-ghost shortcut-clear" data-target="shortcut-settings">
+                <span class="btn-icon">✕</span>
+              </button>
+            </div>
+            <small class="input-help">
+              Open settings window (Default: ⌘,)
+            </small>
+          </div>
+
+          <div class="input-group">
+            <label for="shortcut-toggle-hud">HUD Toggle Shortcut</label>
+            <div class="shortcut-input-container">
+              <input 
+                type="text" 
+                id="shortcut-toggle-hud" 
+                name="shortcut-toggle-hud" 
+                class="shortcut-input" 
+                readonly
+                placeholder="Press keys to set shortcut..."
+                title="Click and press key combination to set HUD toggle shortcut"
+              >
+              <button type="button" class="btn btn-small btn-ghost shortcut-clear" data-target="shortcut-toggle-hud">
+                <span class="btn-icon">✕</span>
+              </button>
+            </div>
+            <small class="input-help">
+              Show/hide HUD window (Default: ⌘⇧H)
+            </small>
+          </div>
+
+          <div class="shortcut-status">
+            <h3>Current Shortcuts</h3>
+            <div id="active-shortcuts" class="active-shortcuts-list">
+              <!-- Dynamic shortcut list will be populated here -->
+            </div>
+          </div>
+        </section>
+
         <!-- Actions -->
         <section class="settings-actions">
           <div class="button-group">
