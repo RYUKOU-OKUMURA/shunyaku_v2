@@ -48,4 +48,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   captureAllScreens: () => ipcRenderer.invoke('capture-all-screens'),
   cleanupTempFiles: () => ipcRenderer.invoke('cleanup-temp-files'),
   deleteTempFile: (filePath) => ipcRenderer.invoke('delete-temp-file', filePath),
+
+  // HUD自動非表示機能（タスク4.1）
+  toggleHUDPinned: () => ipcRenderer.invoke('toggle-hud-pinned'),
+  notifyUserActivity: () => ipcRenderer.invoke('notify-hud-user-activity'),
+  updateAutoHideDuration: (duration) => ipcRenderer.invoke('update-hud-auto-hide-duration', duration),
+
+  // HUDイベントリスナー（メインプロセスからの通知を受信）
+  onHudAutoHiding: (callback) => {
+    ipcRenderer.on('hud-auto-hiding', callback);
+    return () => ipcRenderer.removeListener('hud-auto-hiding', callback);
+  },
+  onHudPinnedModeChanged: (callback) => {
+    ipcRenderer.on('hud-pinned-mode-changed', callback);
+    return () => ipcRenderer.removeListener('hud-pinned-mode-changed', callback);
+  },
+  onHudUserActivity: (callback) => {
+    ipcRenderer.on('hud-user-activity', callback);
+    return () => ipcRenderer.removeListener('hud-user-activity', callback);
+  },
 });

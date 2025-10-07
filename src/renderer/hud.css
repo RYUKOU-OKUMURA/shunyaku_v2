@@ -968,3 +968,162 @@ body {
     min-width: auto;
   }
 }
+
+/* 固定モードボタン（タスク4.1.4） */
+.pin-btn {
+  background: rgba(108, 92, 231, 0.6);
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.pin-btn:hover {
+  background: rgba(108, 92, 231, 0.8);
+  box-shadow: 0 0 12px rgba(108, 92, 231, 0.4);
+}
+
+.pin-btn.pinned {
+  background: rgba(230, 126, 34, 0.8) !important;
+  box-shadow: 0 0 16px rgba(230, 126, 34, 0.6) !important;
+  animation: pulse 2s infinite;
+}
+
+.pin-btn.pinned:hover {
+  background: rgba(230, 126, 34, 1) !important;
+}
+
+/* 自動非表示警告（タスク4.1.2） */
+.auto-hide-warning {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: rgba(241, 196, 15, 0.95);
+  border: 1px solid rgba(243, 156, 18, 0.8);
+  border-radius: 6px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.warning-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e50;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.warning-icon {
+  font-size: 14px;
+  animation: flash 1s infinite;
+}
+
+.warning-text {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* パルスアニメーション（固定ボタン用） */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(230, 126, 34, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(230, 126, 34, 0);
+  }
+}
+
+/* 点滅アニメーション（警告アイコン用） */
+@keyframes flash {
+  0%, 50%, 100% {
+    opacity: 1;
+  }
+  25%, 75% {
+    opacity: 0.4;
+  }
+}
+
+/* 固定モード時のHUDスタイル調整 */
+.hud-container.pinned {
+  border: 2px solid rgba(230, 126, 34, 0.6);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(230, 126, 34, 0.3);
+}
+
+.hud-container.pinned .hud-header {
+  background: rgba(230, 126, 34, 0.1);
+  border-bottom: 1px solid rgba(230, 126, 34, 0.3);
+}
+
+/* ホバーエフェクトの改善 */
+.control-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.control-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: width 0.3s ease, height 0.3s ease;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+}
+
+.control-btn:hover::before {
+  width: 40px;
+  height: 40px;
+}
+
+.control-btn .btn-icon {
+  position: relative;
+  z-index: 1;
+}
+
+/* ダークモード対応の改善 */
+@media (prefers-color-scheme: light) {
+  .hud-container {
+    background: rgba(248, 249, 250, 0.95);
+    color: #2c3e50;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.15),
+      0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .hud-header {
+    background: rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .control-btn {
+    background: rgba(0, 0, 0, 0.1);
+    color: #2c3e50;
+  }
+  
+  .control-btn:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+  
+  .auto-hide-warning {
+    background: rgba(255, 235, 59, 0.95);
+    border-color: rgba(255, 193, 7, 0.8);
+    color: #1565c0;
+  }
+}

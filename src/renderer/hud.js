@@ -10,6 +10,8 @@
   const elements = {
     closeBtn: document.getElementById('closeBtn'),
     minimizeBtn: document.getElementById('minimizeBtn'),
+    pinBtn: document.getElementById('pinBtn'),
+    pinBtnIcon: document.getElementById('pinBtnIcon'),
     copyBtn: document.getElementById('copyBtn'),
     refreshBtn: document.getElementById('refreshBtn'),
     originalText: document.getElementById('originalText'),
@@ -35,10 +37,16 @@
     newTranslationBtn: document.getElementById('newTranslationBtn'),
   };
 
+  // 自動非表示機能の状態管理（タスク4.1）
+  let isPinnedMode = false;
+  let isUserInteracting = false;
+  const autoHideCleanupFunctions = [];
+
   // HUDの初期化
   function initializeHUD() {
     setupEventListeners();
     initializeManualTranslation();
+    initializeAutoHide();
     updateStatus('ready', '準備完了');
     // eslint-disable-next-line no-console
     console.log('HUD initialized successfully');
@@ -66,6 +74,11 @@
     // 最小化ボタン（現在は非表示機能）
     if (elements.minimizeBtn) {
       elements.minimizeBtn.addEventListener('click', minimizeHUD);
+    }
+
+    // 固定モードボタン（タスク4.1.4）
+    if (elements.pinBtn) {
+      elements.pinBtn.addEventListener('click', togglePinnedMode);
     }
 
     // コピーボタン - 右クリックでオプション表示
@@ -124,6 +137,9 @@
 
     // ドラッグ可能エリアの設定（既にCSSで設定済みだが、追加の制御）
     setupDragBehavior();
+
+    // ユーザー操作検出の設定（タスク4.1.3）
+    setupUserActivityDetection();
   }
 
   // 手動翻訳のイベントリスナー設定
@@ -984,6 +1000,151 @@
     }
   }
 
+  // 自動非表示機能の初期化（タスク4.1）
+  function initializeAutoHide() {
+    // メインプロセスからのイベントリスナーを設定
+    if (window.electronAPI) {
+      // 自動非表示の事前通知
+      const removeAutoHidingListener = window.electronAPI.onHudAutoHiding(() => {
+        showAutoHideWarning();
+      });
+      autoHideCleanupFunctions.push(removeAutoHidingListener);
+
+      // 固定モードの変更通知
+      const removePinnedListener = window.electronAPI.onHudPinnedModeChanged((event, pinned) => {
+        updatePinnedModeUI(pinned);
+      });
+      autoHideCleanupFunctions.push(removePinnedListener);
+
+      // ユーザー活動の通知
+      const removeActivityListener = window.electronAPI.onHudUserActivity(() => {
+        hideAutoHideWarning();
+      });
+      autoHideCleanupFunctions.push(removeActivityListener);
+    }
+  }
+
+  // 固定モードの切り替え（タスク4.1.4）
+  async function togglePinnedMode() {
+    try {
+      const result = await window.electronAPI.toggleHUDPinned();
+      if (result.success) {
+        isPinnedMode = result.pinned;
+        updatePinnedModeUI(result.pinned);
+        updateStatus('ready', isPinnedMode ? '固定モード有効' : '固定モード無効');
+      }
+    } catch (error) {
+      console.error('Failed to toggle pinned mode:', error);
+    }
+  }
+
+  // 固定モードUIの更新
+  function updatePinnedModeUI(pinned) {
+    isPinnedMode = pinned;
+
+    if (elements.pinBtn && elements.pinBtnIcon) {
+      if (pinned) {
+        elements.pinBtn.classList.add('pinned');
+        elements.pinBtn.title = '固定解除';
+        elements.pinBtnIcon.textContent = '📌';
+      } else {
+        elements.pinBtn.classList.remove('pinned');
+        elements.pinBtn.title = '固定モード';
+        elements.pinBtnIcon.textContent = '📍';
+      }
+    }
+
+    // 固定モード時は自動非表示警告を非表示
+    if (pinned) {
+      hideAutoHideWarning();
+    }
+  }
+
+  // ユーザー操作検出の設定（タスク4.1.3）
+  function setupUserActivityDetection() {
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'wheel', 'touchstart'];
+    const hudContainer = elements.hudContainer || document.body;
+
+    const activityHandler = () => {
+      if (!isUserInteracting) {
+        isUserInteracting = true;
+        // メインプロセスにユーザー操作を通知
+        if (window.electronAPI) {
+          window.electronAPI.notifyUserActivity();
+        }
+
+        // 500ms後にフラグをリセット（デバウンス）
+        setTimeout(() => {
+          isUserInteracting = false;
+        }, 500);
+      }
+    };
+
+    // 各イベントリスナーを設定
+    activityEvents.forEach(eventType => {
+      hudContainer.addEventListener(eventType, activityHandler, { passive: true });
+    });
+  }
+
+  // 自動非表示警告の表示
+  function showAutoHideWarning() {
+    if (isPinnedMode) {return;} // 固定モード時は表示しない
+
+    let warningElement = document.getElementById('autoHideWarning');
+    if (!warningElement) {
+      warningElement = document.createElement('div');
+      warningElement.id = 'autoHideWarning';
+      warningElement.className = 'auto-hide-warning';
+      warningElement.innerHTML = `
+        <div class="warning-content">
+          <span class="warning-icon">⏰</span>
+          <span class="warning-text">あと1秒で自動で閉じます</span>
+        </div>
+      `;
+
+      // HUDコンテナの上部に追加
+      const hudContainer = elements.hudContainer || document.body;
+      hudContainer.appendChild(warningElement);
+    }
+
+    // アニメーションで表示
+    setTimeout(() => {
+      if (warningElement) {
+        warningElement.style.opacity = '1';
+        warningElement.style.transform = 'translateY(0)';
+      }
+    }, 10);
+  }
+
+  // 自動非表示警告の非表示
+  function hideAutoHideWarning() {
+    const warningElement = document.getElementById('autoHideWarning');
+    if (warningElement) {
+      warningElement.style.opacity = '0';
+      warningElement.style.transform = 'translateY(-10px)';
+
+      setTimeout(() => {
+        if (warningElement.parentNode) {
+          warningElement.parentNode.removeChild(warningElement);
+        }
+      }, 300);
+    }
+  }
+
+  // リソースのクリーンアップ
+  function cleanupAutoHide() {
+    // イベントリスナーを清理
+    autoHideCleanupFunctions.forEach(cleanup => {
+      if (typeof cleanup === 'function') {
+        cleanup();
+      }
+    });
+    autoHideCleanupFunctions.length = 0;
+
+    // 警告を非表示
+    hideAutoHideWarning();
+  }
+
   // 外部から呼び出し可能な関数をグローバルに公開
   window.HUD = {
     updateTextContent,
@@ -995,6 +1156,9 @@
     showManualInputMode,
     performTranslation,
     executeFullWorkflow,
+    togglePinnedMode,
+    isPinned: () => isPinnedMode,
+    cleanup: cleanupAutoHide,
   };
 
   // タスク3.4用のグローバル関数

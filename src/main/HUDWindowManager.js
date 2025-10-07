@@ -11,6 +11,10 @@ class HUDWindowManager {
   constructor() {
     this.hudWindow = null;
     this.isVisible = false;
+    this.autoHideTimer = null;
+    this.isPinned = false;
+    this.autoHideDuration = 15000; // デフォルト15秒（ミリ秒）
+    this.settingsStore = null;
   }
 
   /**
@@ -114,6 +118,7 @@ class HUDWindowManager {
    * @param {Object} options - 表示オプション
    * @param {number} options.x - X座標（省略時は中央）
    * @param {number} options.y - Y座標（省略時は中央）
+   * @param {boolean} options.startAutoHide - 自動非表示を開始するか（デフォルト: true）
    * @returns {Promise<void>}
    */
   async showHUD(options = {}) {
@@ -133,6 +138,11 @@ class HUDWindowManager {
     this.hudWindow.show();
     this.hudWindow.focus();
     this.isVisible = true;
+
+    // 自動非表示タイマーを開始（デフォルトで有効）
+    if (options.startAutoHide !== false) {
+      this.startAutoHideTimer();
+    }
   }
 
   /**
@@ -142,6 +152,7 @@ class HUDWindowManager {
     if (this.hudWindow && !this.hudWindow.isDestroyed()) {
       this.hudWindow.hide();
       this.isVisible = false;
+      this.clearAutoHideTimer();
     }
   }
 
@@ -150,6 +161,7 @@ class HUDWindowManager {
    */
   closeHUD() {
     if (this.hudWindow && !this.hudWindow.isDestroyed()) {
+      this.clearAutoHideTimer();
       this.hudWindow.close();
       this.hudWindow = null;
       this.isVisible = false;
@@ -451,9 +463,127 @@ class HUDWindowManager {
   }
 
   /**
+   * 設定ストアを設定
+   * @param {SettingsStore} settingsStore - 設定ストアのインスタンス
+   */
+  setSettingsStore(settingsStore) {
+    this.settingsStore = settingsStore;
+    this.updateAutoHideDuration();
+  }
+
+  /**
+   * 自動非表示時間を設定から更新
+   * @private
+   */
+  updateAutoHideDuration() {
+    if (this.settingsStore) {
+      const duration = this.settingsStore.get('hud.autoHideDuration', 15);
+      // 負の値は0として扱う
+      this.autoHideDuration = Math.max(0, duration) * 1000; // 秒をミリ秒に変換
+    }
+  }
+
+  /**
+   * 自動非表示タイマーを開始
+   * @private
+   */
+  startAutoHideTimer() {
+    // 固定モードまたは自動非表示が無効の場合はタイマーを開始しない
+    if (this.isPinned || this.autoHideDuration <= 0) {
+      return;
+    }
+
+    // 既存のタイマーをクリア
+    this.clearAutoHideTimer();
+
+    // 新しいタイマーを設定
+    this.autoHideTimer = setTimeout(() => {
+      if (this.isVisible && !this.isPinned) {
+        // HUDに自動非表示の通知を送信
+        if (this.hudWindow && !this.hudWindow.isDestroyed() && this.hudWindow.webContents) {
+          this.hudWindow.webContents.send('hud-auto-hiding');
+        }
+        
+        // HUDを非表示にする
+        setTimeout(() => {
+          if (this.isVisible && !this.isPinned) { // 再チェック
+            this.hideHUD();
+          }
+        }, 1000); // 1秒の猶予を与える
+      }
+    }, this.autoHideDuration);
+  }
+
+  /**
+   * 自動非表示タイマーをクリア
+   * @private
+   */
+  clearAutoHideTimer() {
+    if (this.autoHideTimer) {
+      clearTimeout(this.autoHideTimer);
+      this.autoHideTimer = null;
+    }
+  }
+
+  /**
+   * 自動非表示タイマーをリセット（ユーザー操作時に呼び出し）
+   */
+  resetAutoHideTimer() {
+    if (this.isVisible && !this.isPinned) {
+      this.startAutoHideTimer();
+    }
+  }
+
+  /**
+   * 固定モードの切り替え
+   * @param {boolean} pinned - 固定するかどうか
+   */
+  setPinnedMode(pinned) {
+    this.isPinned = pinned;
+    
+    if (pinned) {
+      // 固定モード: タイマーをクリア
+      this.clearAutoHideTimer();
+      // HUDに固定モードの通知を送信
+      if (this.hudWindow && !this.hudWindow.isDestroyed() && this.hudWindow.webContents) {
+        this.hudWindow.webContents.send('hud-pinned-mode-changed', true);
+      }
+    } else {
+      // 固定解除: タイマーを開始
+      this.startAutoHideTimer();
+      // HUDに固定モード解除の通知を送信
+      if (this.hudWindow && !this.hudWindow.isDestroyed() && this.hudWindow.webContents) {
+        this.hudWindow.webContents.send('hud-pinned-mode-changed', false);
+      }
+    }
+  }
+
+  /**
+   * 固定モード状態を取得
+   * @returns {boolean} 固定されているかどうか
+   */
+  isPinnedMode() {
+    return this.isPinned;
+  }
+
+  /**
+   * ユーザー操作を通知（タイマーリセット用）
+   */
+  notifyUserActivity() {
+    // HUDに活動通知を送信
+    if (this.hudWindow && !this.hudWindow.isDestroyed() && this.hudWindow.webContents) {
+      this.hudWindow.webContents.send('hud-user-activity');
+    }
+    
+    // タイマーをリセット
+    this.resetAutoHideTimer();
+  }
+
+  /**
    * ウィンドウリソースのクリーンアップ
    */
   destroy() {
+    this.clearAutoHideTimer();
     this.closeHUD();
   }
 }

@@ -69,7 +69,7 @@ class GlobalShortcutManager {
           const success = await this.registerShortcut(
             shortcutKey,
             accelerator,
-            this.callbacks.get(shortcutKey),
+            this.callbacks.get(shortcutKey)
           );
 
           if (!success) {
