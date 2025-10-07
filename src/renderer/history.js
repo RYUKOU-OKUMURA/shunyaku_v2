@@ -105,26 +105,26 @@ function getDateRange(filter) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   switch (filter) {
-    case 'today':
-      return { start: today, end: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
+  case 'today':
+    return { start: today, end: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
 
-    case 'week': {
-      const weekStart = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return { start: weekStart, end: now };
-    }
+  case 'week': {
+    const weekStart = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return { start: weekStart, end: now };
+  }
 
-    case 'month': {
-      const monthStart = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      return { start: monthStart, end: now };
-    }
+  case 'month': {
+    const monthStart = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return { start: monthStart, end: now };
+  }
 
-    case 'year': {
-      const yearStart = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
-      return { start: yearStart, end: now };
-    }
+  case 'year': {
+    const yearStart = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
+    return { start: yearStart, end: now };
+  }
 
-    default:
-      return null;
+  default:
+    return null;
   }
 }
 
@@ -245,7 +245,7 @@ function applyFilters() {
     filtered = filtered.filter(
       (item) =>
         item.originalText.toLowerCase().includes(query) ||
-        item.translatedText.toLowerCase().includes(query)
+        item.translatedText.toLowerCase().includes(query),
     );
   }
 
@@ -253,7 +253,7 @@ function applyFilters() {
   if (state.filters.language) {
     const [source, target] = state.filters.language.split('-');
     filtered = filtered.filter(
-      (item) => item.sourceLanguage === source && item.targetLanguage === target
+      (item) => item.sourceLanguage === source && item.targetLanguage === target,
     );
   }
 
@@ -585,7 +585,7 @@ function handleItemSelection(itemId, selected) {
 function handleSelectAll(selectAll) {
   const currentPageItems = state.filteredHistory.slice(
     (state.currentPage - 1) * state.itemsPerPage,
-    state.currentPage * state.itemsPerPage
+    state.currentPage * state.itemsPerPage,
   );
 
   currentPageItems.forEach((item) => {
@@ -638,7 +638,7 @@ async function handleToggleFavorite(itemId) {
 
       showStatusMessage(
         result.favorite ? 'Added to favorites' : 'Removed from favorites',
-        'success'
+        'success',
       );
     } else {
       throw new Error(result.error || 'Failed to toggle favorite');
@@ -669,7 +669,7 @@ async function handleDeleteItem(itemId) {
   const confirmed = await showConfirmationDialog(
     'Delete Translation',
     'Are you sure you want to delete this translation? This action cannot be undone.',
-    'Delete'
+    'Delete',
   );
 
   if (!confirmed) {
@@ -707,7 +707,7 @@ async function handleDeleteSelected() {
   const confirmed = await showConfirmationDialog(
     'Delete Selected Translations',
     `Are you sure you want to delete ${state.selectedItems.size} translation(s)? This action cannot be undone.`,
-    'Delete All'
+    'Delete All',
   );
 
   if (!confirmed) {
@@ -728,7 +728,7 @@ async function handleDeleteSelected() {
       updateHeaderStats();
       showStatusMessage(
         `${result.deletedCount} translation${result.deletedCount !== 1 ? 's' : ''} deleted`,
-        'success'
+        'success',
       );
     } else {
       throw new Error(result.error || 'Failed to delete translations');
@@ -807,7 +807,7 @@ async function handleExport(selectedOnly = false) {
     if (result.success) {
       showStatusMessage(
         `${itemsToExport.length} translation${itemsToExport.length !== 1 ? 's' : ''} exported to ${result.filePath}`,
-        'success'
+        'success',
       );
     } else {
       throw new Error(result.error || 'Export failed');
@@ -847,7 +847,7 @@ async function handleImport() {
           await loadHistoryData(); // 履歴を再読み込み
           showStatusMessage(
             `${result.importedCount} translation${result.importedCount !== 1 ? 's' : ''} imported`,
-            'success'
+            'success',
           );
         } else {
           throw new Error(result.error || 'Import failed');

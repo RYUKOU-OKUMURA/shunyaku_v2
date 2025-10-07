@@ -33,6 +33,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // DeepL API状態確認
   checkTranslationService: () => ipcRenderer.invoke('check-translation-service'),
 
+  // API使用量チェック（タスク4.4.1）
+  getAPIUsage: () => ipcRenderer.invoke('get-api-usage'),
+
   // 完全フロー実行（タスク3.4）
   executeFullWorkflow: (options) => ipcRenderer.invoke('execute-full-workflow', options),
   executeShortcutWorkflow: () => ipcRenderer.invoke('execute-shortcut-workflow'),

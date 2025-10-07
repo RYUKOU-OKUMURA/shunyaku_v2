@@ -1395,3 +1395,128 @@ body {
     color: #1565c0;
   }
 }
+
+/* API制限エラー通知（タスク4.4.1） */
+.api-limit-notice {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  margin: 8px 0;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  position: relative;
+  overflow: hidden;
+}
+
+.api-limit-notice::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.limit-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.limit-icon {
+  font-size: 16px;
+  filter: drop-shadow(0 0 4px rgba(231, 76, 60, 0.6));
+}
+
+.limit-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.limit-message {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  margin-left: 26px;
+}
+
+.limit-alternatives {
+  margin-left: 26px;
+  font-size: 12px;
+}
+
+.alternatives-title {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 6px;
+}
+
+.alternatives-list {
+  margin: 0;
+  padding-left: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.4;
+}
+
+.alternatives-list li {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.limit-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 26px;
+  flex-wrap: wrap;
+}
+
+.limit-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid rgba(231, 76, 60, 0.5);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
+.limit-action-btn:hover {
+  background: rgba(231, 76, 60, 0.3);
+  border-color: rgba(231, 76, 60, 0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);
+}
+
+.limit-action-btn .btn-icon {
+  font-size: 12px;
+}
+
+.limit-action-btn .btn-text {
+  font-size: 10px;
+}
+
+/* 再試行ボタンのスタイル（タスク4.4.4） */
+.retry-btn {
+  background: rgba(52, 152, 219, 0.2);
+  border-color: rgba(52, 152, 219, 0.5);
+}
+
+.retry-btn:hover {
+  background: rgba(52, 152, 219, 0.3);
+  border-color: rgba(52, 152, 219, 0.7);
+}

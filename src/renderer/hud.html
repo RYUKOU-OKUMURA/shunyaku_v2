@@ -100,6 +100,29 @@
             </div>
           </div>
 
+          <!-- API制限エラー時の代替案表示（タスク4.4.1） -->
+          <div class="api-limit-notice" id="apiLimitNotice" style="display: none">
+            <div class="limit-header">
+              <span class="limit-icon">🚫</span>
+              <span class="limit-title" id="limitTitle">API制限エラー</span>
+            </div>
+            <div class="limit-message" id="limitMessage">DeepL APIの使用制限に達しました。</div>
+            <div class="limit-alternatives" id="limitAlternatives">
+              <div class="alternatives-title">代替案:</div>
+              <ul class="alternatives-list" id="alternativesList"></ul>
+            </div>
+            <div class="limit-actions">
+              <button class="limit-action-btn usage-check-btn" id="usageCheckBtn">
+                <span class="btn-icon">📊</span>
+                <span class="btn-text">使用量確認</span>
+              </button>
+              <button class="limit-action-btn settings-btn" id="apiSettingsBtn">
+                <span class="btn-icon">⚙️</span>
+                <span class="btn-text">API設定</span>
+              </button>
+            </div>
+          </div>
+
           <!-- OCR失敗時の手動入力フォールバック（タスク4.4.2） -->
           <div class="ocr-fallback-notice" id="ocrFallbackNotice" style="display: none">
             <div class="fallback-header">
@@ -121,6 +144,10 @@
           <button class="action-btn refresh-btn" id="refreshBtn" title="再翻訳">
             <span class="btn-icon">🔄</span>
             <span class="btn-text">再翻訳</span>
+          </button>
+          <button class="action-btn retry-btn" id="retryBtn" title="再試行" style="display: none">
+            <span class="btn-icon">🔄</span>
+            <span class="btn-text">再試行</span>
           </button>
           <button class="action-btn new-translation-btn" id="newTranslationBtn" title="新しい翻訳">
             <span class="btn-icon">➕</span>

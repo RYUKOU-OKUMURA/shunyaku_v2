@@ -1105,7 +1105,7 @@ SettingsManager.prototype.collectFormData = function () {
 
   // Collect selected OCR languages
   const ocrCheckboxes = this.elements.ocrLanguagesGroup.querySelectorAll(
-    'input[type="checkbox"]:checked'
+    'input[type="checkbox"]:checked',
   );
   data.ocr.languages = Array.from(ocrCheckboxes).map((cb) => cb.value);
 

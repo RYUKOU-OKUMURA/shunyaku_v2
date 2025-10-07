@@ -285,7 +285,7 @@ class TranslationService {
       ];
       errorInfo.severity = 'warning';
     } else if (statusCode === 429) {
-    // API短期制限エラー（429）
+      // API短期制限エラー（429）
       errorInfo.type = 'rate_limit';
       errorInfo.userMessage = 'APIリクエスト制限に達しました（短期間）';
       errorInfo.alternatives = [
@@ -296,7 +296,7 @@ class TranslationService {
       errorInfo.retryable = true;
       errorInfo.severity = 'warning';
     } else if (statusCode === 456) {
-    // API月間制限エラー（456）
+      // API月間制限エラー（456）
       errorInfo.type = 'quota_exceeded';
       errorInfo.userMessage = 'DeepL APIの月間文字数制限に達しました';
       errorInfo.alternatives = [
@@ -325,7 +325,7 @@ class TranslationService {
       errorInfo.retryable = true;
       errorInfo.severity = 'error';
     } else if (statusCode >= 500 && statusCode < 600) {
-    // DeepLサーバーエラー（5xx）
+      // DeepLサーバーエラー（5xx）
       errorInfo.type = 'server_error';
       errorInfo.userMessage = 'DeepL APIサーバーでエラーが発生しています';
       errorInfo.alternatives = [

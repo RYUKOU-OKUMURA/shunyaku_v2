@@ -159,7 +159,7 @@ class TranslationHistoryStore {
           item.translatedText === historyItem.translatedText &&
           item.sourceLanguage === historyItem.sourceLanguage &&
           item.targetLanguage === historyItem.targetLanguage &&
-          item.timestamp > fiveMinutesAgo
+          item.timestamp > fiveMinutesAgo,
       );
 
       if (isDuplicate) {
@@ -183,7 +183,7 @@ class TranslationHistoryStore {
       this.updateStats(historyItem);
 
       console.log(
-        `Translation history added: ${historyItem.id} (${historyItem.sourceLanguage} → ${historyItem.targetLanguage})`
+        `Translation history added: ${historyItem.id} (${historyItem.sourceLanguage} → ${historyItem.targetLanguage})`,
       );
 
       return historyItem.id;
@@ -533,13 +533,13 @@ class TranslationHistoryStore {
       stats.mostUsedSourceLanguage =
         Object.entries(sourceLanguageCounts).reduce(
           (a, b) => (sourceLanguageCounts[a[0]] > sourceLanguageCounts[b[0]] ? a : b),
-          ['', 0]
+          ['', 0],
         )[0] || null;
 
       stats.mostUsedTargetLanguage =
         Object.entries(targetLanguageCounts).reduce(
           (a, b) => (targetLanguageCounts[a[0]] > targetLanguageCounts[b[0]] ? a : b),
-          ['', 0]
+          ['', 0],
         )[0] || null;
 
       this.store.set('stats', stats);
@@ -563,7 +563,7 @@ class TranslationHistoryStore {
 
       // 最新のアイテムから統計を更新
       const latestItem = items.reduce((latest, item) =>
-        new Date(item.timestamp) > new Date(latest.timestamp) ? item : latest
+        new Date(item.timestamp) > new Date(latest.timestamp) ? item : latest,
       );
 
       this.updateStats(latestItem);

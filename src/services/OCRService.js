@@ -667,9 +667,8 @@ class OCRService {
         '手動でテキストを入力してください',
       ];
       errorInfo.severity = 'error';
-    }
-    // ファイル形式エラー
-    else if (errorMessage.includes('unsupported') || errorMessage.includes('format')) {
+    } else if (errorMessage.includes('unsupported') || errorMessage.includes('format')) {
+      // ファイル形式エラー
       errorInfo.type = 'unsupported_format';
       errorInfo.userMessage = 'サポートされていない画像形式です';
       errorInfo.alternatives = [
@@ -678,9 +677,8 @@ class OCRService {
         '手動でテキストを入力してください',
       ];
       errorInfo.severity = 'warning';
-    }
-    // 画像が大きすぎる
-    else if (errorMessage.includes('too large') || errorMessage.includes('size')) {
+    } else if (errorMessage.includes('too large') || errorMessage.includes('size')) {
+      // 画像が大きすぎる
       errorInfo.type = 'file_too_large';
       errorInfo.userMessage = '画像ファイルが大きすぎます';
       errorInfo.alternatives = [
@@ -689,9 +687,8 @@ class OCRService {
         '手動でテキストを入力してください',
       ];
       errorInfo.severity = 'warning';
-    }
-    // 言語データエラー
-    else if (errorMessage.includes('language') || errorMessage.includes('tessdata')) {
+    } else if (errorMessage.includes('language') || errorMessage.includes('tessdata')) {
+      // 言語データエラー
       errorInfo.type = 'language_data_error';
       errorInfo.userMessage = 'OCR言語データに問題があります';
       errorInfo.alternatives = [
@@ -700,16 +697,14 @@ class OCRService {
         '手動でテキストを入力してください',
       ];
       errorInfo.severity = 'error';
-    }
-    // Worker初期化エラー
-    else if (errorMessage.includes('worker') || errorMessage.includes('initialize')) {
+    } else if (errorMessage.includes('worker') || errorMessage.includes('initialize')) {
+      // Worker初期化エラー
       errorInfo.type = 'worker_error';
       errorInfo.userMessage = 'OCRエンジンの初期化に失敗しました';
       errorInfo.alternatives = ['アプリを再起動してください', '手動でテキストを入力してください'];
       errorInfo.severity = 'error';
-    }
-    // メモリ不足
-    else if (
+    } else if (
+      // メモリ不足
       errorMessage.includes('memory') ||
       errorMessage.includes('out of') ||
       errorMessage.includes('allocation')
@@ -723,9 +718,8 @@ class OCRService {
         '手動でテキストを入力してください',
       ];
       errorInfo.severity = 'warning';
-    }
+    } else if (errorMessage.includes('timeout') || processingTime > 60000) {
     // タイムアウト
-    else if (errorMessage.includes('timeout') || processingTime > 60000) {
       errorInfo.type = 'timeout';
       errorInfo.userMessage = 'OCR処理がタイムアウトしました';
       errorInfo.alternatives = [
@@ -734,9 +728,8 @@ class OCRService {
         '手動でテキストを入力してください',
       ];
       errorInfo.severity = 'warning';
-    }
+    } else if (errorMessage.includes('confidence') || errorMessage.includes('quality')) {
     // 低品質画像（推定）
-    else if (errorMessage.includes('confidence') || errorMessage.includes('quality')) {
       errorInfo.type = 'low_quality';
       errorInfo.userMessage = '画像の品質が低すぎてテキスト認識できません';
       errorInfo.alternatives = [
@@ -747,9 +740,8 @@ class OCRService {
         '手動でテキストを入力してください',
       ];
       errorInfo.severity = 'info';
-    }
-    // 一般的なOCRエラー
-    else {
+    } else {
+      // 一般的なOCRエラー
       errorInfo.userMessage = 'テキスト認識処理中にエラーが発生しました';
       errorInfo.alternatives = [
         '画像の品質を確認してください（解像度、明度、コントラスト）',
