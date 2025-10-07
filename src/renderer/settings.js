@@ -477,45 +477,45 @@ const shortcutManager = {
   // キーマッピング
   keyMap: {
     ' ': 'Space',
-    'Meta': 'Command',
-    'Control': 'Ctrl',
-    'Alt': 'Alt',
-    'Shift': 'Shift',
-    'Tab': 'Tab',
-    'Escape': 'Escape',
-    'Enter': 'Enter',
-    'ArrowUp': 'Up',
-    'ArrowDown': 'Down',
-    'ArrowLeft': 'Left',
-    'ArrowRight': 'Right',
-    'Home': 'Home',
-    'End': 'End',
-    'PageUp': 'PageUp',
-    'PageDown': 'PageDown',
-    'Insert': 'Insert',
-    'Delete': 'Delete',
-    'Backspace': 'Backspace',
+    Meta: 'Command',
+    Control: 'Ctrl',
+    Alt: 'Alt',
+    Shift: 'Shift',
+    Tab: 'Tab',
+    Escape: 'Escape',
+    Enter: 'Enter',
+    ArrowUp: 'Up',
+    ArrowDown: 'Down',
+    ArrowLeft: 'Left',
+    ArrowRight: 'Right',
+    Home: 'Home',
+    End: 'End',
+    PageUp: 'PageUp',
+    PageDown: 'PageDown',
+    Insert: 'Insert',
+    Delete: 'Delete',
+    Backspace: 'Backspace',
   },
 
   // macOSのキーマッピング（表示用）
   displayMap: {
-    'CommandOrControl': '⌘',
-    'Command': '⌘',
-    'Ctrl': '^',
-    'Control': '^',
-    'Alt': '⌥',
-    'Option': '⌥',
-    'Shift': '⇧',
-    'Space': '␣',
-    'Tab': '⇥',
-    'Escape': '⎋',
-    'Enter': '↩',
-    'Up': '↑',
-    'Down': '↓',
-    'Left': '←',
-    'Right': '→',
-    'Delete': '⌦',
-    'Backspace': '⌫',
+    CommandOrControl: '⌘',
+    Command: '⌘',
+    Ctrl: '^',
+    Control: '^',
+    Alt: '⌥',
+    Option: '⌥',
+    Shift: '⇧',
+    Space: '␣',
+    Tab: '⇥',
+    Escape: '⎋',
+    Enter: '↩',
+    Up: '↑',
+    Down: '↓',
+    Left: '←',
+    Right: '→',
+    Delete: '⌦',
+    Backspace: '⌫',
   },
 };
 
@@ -542,7 +542,6 @@ async function initializeShortcuts() {
     setupShortcutEventListeners();
 
     console.log('✅ Shortcut settings initialized');
-
   } catch (error) {
     console.error('❌ Failed to initialize shortcuts:', error);
     console.error('Failed to load shortcut settings');
@@ -573,7 +572,6 @@ async function loadShortcutSettings() {
     }
 
     shortcutManager.currentShortcuts = shortcutSettings;
-
   } catch (error) {
     console.error('❌ Failed to load shortcut settings:', error);
     throw error;
@@ -590,7 +588,6 @@ async function loadRegisteredShortcuts() {
     if (result.success) {
       displayActiveShortcuts(result.shortcuts);
     }
-
   } catch (error) {
     console.error('❌ Failed to load registered shortcuts:', error);
   }
@@ -601,7 +598,9 @@ async function loadRegisteredShortcuts() {
  */
 function displayActiveShortcuts(shortcuts) {
   const container = document.getElementById('active-shortcuts');
-  if (!container) {return;}
+  if (!container) {
+    return;
+  }
 
   container.innerHTML = '';
 
@@ -623,7 +622,8 @@ function displayActiveShortcuts(shortcuts) {
   }
 
   if (Object.keys(shortcuts).length === 0) {
-    container.innerHTML = '<div class="shortcut-item"><em>No shortcuts currently registered</em></div>';
+    container.innerHTML =
+      '<div class="shortcut-item"><em>No shortcuts currently registered</em></div>';
   }
 }
 
@@ -644,11 +644,13 @@ function getShortcutDisplayName(key) {
  * アクセレレーターを表示用にフォーマット
  */
 function formatAcceleratorForDisplay(accelerator) {
-  if (!accelerator) {return '';}
+  if (!accelerator) {
+    return '';
+  }
 
   return accelerator
     .split('+')
-    .map(part => shortcutManager.displayMap[part] || part)
+    .map((part) => shortcutManager.displayMap[part] || part)
     .join('');
 }
 
@@ -658,7 +660,7 @@ function formatAcceleratorForDisplay(accelerator) {
 function setupShortcutEventListeners() {
   // ショートカット入力フィールド
   const shortcutInputs = document.querySelectorAll('.shortcut-input');
-  shortcutInputs.forEach(input => {
+  shortcutInputs.forEach((input) => {
     input.addEventListener('focus', startRecordingShortcut);
     input.addEventListener('blur', stopRecordingShortcut);
     input.addEventListener('keydown', handleShortcutKeydown);
@@ -666,7 +668,7 @@ function setupShortcutEventListeners() {
 
   // クリアボタン
   const clearButtons = document.querySelectorAll('.shortcut-clear');
-  clearButtons.forEach(button => {
+  clearButtons.forEach((button) => {
     button.addEventListener('click', clearShortcut);
   });
 }
@@ -677,7 +679,9 @@ function setupShortcutEventListeners() {
 function startRecordingShortcut(event) {
   const input = event.target;
 
-  if (shortcutManager.recording) {return;}
+  if (shortcutManager.recording) {
+    return;
+  }
 
   shortcutManager.recording = true;
   shortcutManager.recordingInput = input;
@@ -695,7 +699,9 @@ function startRecordingShortcut(event) {
 function stopRecordingShortcut(event) {
   const input = event.target;
 
-  if (!shortcutManager.recording || shortcutManager.recordingInput !== input) {return;}
+  if (!shortcutManager.recording || shortcutManager.recordingInput !== input) {
+    return;
+  }
 
   shortcutManager.recording = false;
   shortcutManager.recordingInput = null;
@@ -714,7 +720,9 @@ function stopRecordingShortcut(event) {
  * ショートカットキーダウンハンドラー
  */
 async function handleShortcutKeydown(event) {
-  if (!shortcutManager.recording) {return;}
+  if (!shortcutManager.recording) {
+    return;
+  }
 
   event.preventDefault();
   event.stopPropagation();
@@ -787,7 +795,6 @@ async function handleShortcutKeydown(event) {
     checkShortcutConflicts(input);
 
     console.log('✅ Shortcut set:', accelerator);
-
   } catch (error) {
     console.error('❌ Failed to test shortcut:', error);
     input.value = 'Error testing shortcut';
@@ -802,8 +809,10 @@ function checkShortcutConflicts(currentInput) {
   const currentAccelerator = currentInput.dataset.accelerator;
   const shortcutInputs = document.querySelectorAll('.shortcut-input');
 
-  shortcutInputs.forEach(input => {
-    if (input === currentInput) {return;}
+  shortcutInputs.forEach((input) => {
+    if (input === currentInput) {
+      return;
+    }
 
     if (input.dataset.accelerator === currentAccelerator) {
       // 競合している入力フィールドをクリア
@@ -903,7 +912,6 @@ async function saveShortcutSettings() {
     } else {
       throw new Error(result.error || 'Failed to update shortcuts');
     }
-
   } catch (error) {
     console.error('❌ Failed to save shortcut settings:', error);
     console.error(`Failed to save shortcuts: ${error.message}`);
@@ -919,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // 設定保存時にショートカット設定も保存
 const originalSaveSettings = window.saveSettings;
 if (originalSaveSettings) {
-  window.saveSettings = async function() {
+  window.saveSettings = async function () {
     await originalSaveSettings();
     await saveShortcutSettings();
   };

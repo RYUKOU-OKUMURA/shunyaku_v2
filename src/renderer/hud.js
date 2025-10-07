@@ -322,7 +322,9 @@
   // コピーオプション表示の切り替え
   function toggleCopyOptions() {
     const copyBtn = elements.copyBtn;
-    if (!copyBtn) {return;}
+    if (!copyBtn) {
+      return;
+    }
 
     let copyOptions = copyBtn.parentElement?.querySelector('.copy-options');
 
@@ -359,7 +361,7 @@
       { type: 'both', icon: '📋', text: '原文と翻訳' },
     ];
 
-    options.forEach(option => {
+    options.forEach((option) => {
       const button = document.createElement('button');
       button.className = 'copy-option';
       button.innerHTML = `
@@ -524,10 +526,10 @@
 
       // ステージ別のローディングメッセージ
       const stageMessages = {
-        'capturing': 'スクリーンキャプチャ中...',
-        'ocr': 'テキスト認識中...',
-        'translating': '翻訳中...',
-        'processing': '処理中...',
+        capturing: 'スクリーンキャプチャ中...',
+        ocr: 'テキスト認識中...',
+        translating: '翻訳中...',
+        processing: '処理中...',
       };
 
       if (loadingText) {
@@ -555,7 +557,9 @@
   // ローディングプログレスを追加
   function addLoadingProgress(stage) {
     const loadingIndicator = elements.loadingIndicator;
-    if (!loadingIndicator) {return;}
+    if (!loadingIndicator) {
+      return;
+    }
 
     let progressContainer = loadingIndicator.querySelector('.loading-progress');
     if (!progressContainer) {
@@ -589,10 +593,10 @@
     const loadingStage = progressContainer.querySelector('.loading-stage');
     if (loadingStage) {
       const stageTexts = {
-        'capturing': 'キャプチャ実行中',
-        'ocr': 'テキスト解析中',
-        'translating': 'AI翻訳実行中',
-        'processing': 'データ処理中',
+        capturing: 'キャプチャ実行中',
+        ocr: 'テキスト解析中',
+        translating: 'AI翻訳実行中',
+        processing: 'データ処理中',
       };
       loadingStage.textContent = stageTexts[stage] || '処理実行中';
     }
@@ -631,7 +635,9 @@
 
   // テキストの長さに応じてスタイリングを調整
   function updateTextStyling(element, text) {
-    if (!element || !text) {return;}
+    if (!element || !text) {
+      return;
+    }
 
     element.classList.remove('short-text', 'long-text');
 
@@ -644,7 +650,9 @@
 
   // 言語インジケーターを追加
   function addLanguageIndicator(parentElement, language) {
-    if (!parentElement || !language) {return;}
+    if (!parentElement || !language) {
+      return;
+    }
 
     // 既存のインジケーターを削除
     const existingIndicator = parentElement.querySelector('.language-indicator');
@@ -662,14 +670,14 @@
   // 言語コードを表示用にフォーマット
   function formatLanguageCode(code) {
     const languageNames = {
-      'ja': 'JA',
-      'en': 'EN',
-      'zh': 'ZH',
-      'ko': 'KO',
-      'de': 'DE',
-      'fr': 'FR',
-      'es': 'ES',
-      'auto': 'AUTO',
+      ja: 'JA',
+      en: 'EN',
+      zh: 'ZH',
+      ko: 'KO',
+      de: 'DE',
+      fr: 'FR',
+      es: 'ES',
+      auto: 'AUTO',
     };
     return languageNames[code] || code.toUpperCase();
   }
@@ -687,11 +695,13 @@
     if (errorType) {
       switch (errorType) {
       case 'api_key':
-        displayMessage = 'APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
+        displayMessage =
+            'APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
         errorClass = 'error-warning';
         break;
       case 'quota_exceeded':
-        displayMessage = 'API使用量の上限に達しました。しばらく時間をおいてから再試行してください。';
+        displayMessage =
+            'API使用量の上限に達しました。しばらく時間をおいてから再試行してください。';
         errorClass = 'error-warning';
         break;
       case 'network':
@@ -703,7 +713,8 @@
         errorClass = 'error-info';
         break;
       case 'ocr_failed':
-        displayMessage = 'テキスト認識に失敗しました。画像が不鮮明または文字が小さすぎる可能性があります。';
+        displayMessage =
+            'テキスト認識に失敗しました。画像が不鮮明または文字が小さすぎる可能性があります。';
         errorClass = 'error-warning';
         break;
       case 'capture_failed':
@@ -723,7 +734,9 @@
   // エラー表示を再構築
   function rebuildErrorDisplay(message, details, errorClass, errorType) {
     const errorDisplay = elements.errorDisplay;
-    if (!errorDisplay) {return;}
+    if (!errorDisplay) {
+      return;
+    }
 
     // クラスをリセットして新しいクラスを適用
     errorDisplay.className = `error-display ${errorClass}`;
@@ -828,7 +841,9 @@
       elements.refreshBtn?.classList.add('refreshing');
       const btnText = elements.refreshBtn?.querySelector('.btn-text');
 
-      if (btnText) {btnText.textContent = '再翻訳中...';}
+      if (btnText) {
+        btnText.textContent = '再翻訳中...';
+      }
 
       updateStatus('processing', '再翻訳中...');
 
@@ -862,11 +877,15 @@
       // 視覚フィードバックをリセット
       elements.refreshBtn?.classList.remove('refreshing');
       const btnText = elements.refreshBtn?.querySelector('.btn-text');
-      if (btnText) {btnText.textContent = '再翻訳';}
+      if (btnText) {
+        btnText.textContent = '再翻訳';
+      }
 
       setTimeout(() => {
-        if (elements.statusText?.textContent.includes('完了') ||
-            elements.statusText?.textContent.includes('エラー')) {
+        if (
+          elements.statusText?.textContent.includes('完了') ||
+          elements.statusText?.textContent.includes('エラー')
+        ) {
           updateStatus('ready', '準備完了');
         }
       }, 2000);

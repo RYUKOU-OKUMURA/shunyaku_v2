@@ -1067,7 +1067,6 @@ async function handleTranslateShortcut(shortcutKey, accelerator) {
     if (!result.success) {
       console.error('❌ Translation workflow failed from shortcut:', result.error);
     }
-
   } catch (error) {
     console.error('❌ Translation shortcut error:', error);
   }

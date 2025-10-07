@@ -147,7 +147,6 @@ class GlobalShortcutManager {
       } else {
         throw new Error(`Failed to register global shortcut: ${accelerator}`);
       }
-
     } catch (error) {
       console.error(`❌ Failed to register shortcut ${shortcutKey}:`, error);
       return false;
@@ -177,7 +176,6 @@ class GlobalShortcutManager {
 
       console.log(`✅ Unregistered global shortcut: ${shortcutKey} (${shortcutInfo.accelerator})`);
       return true;
-
     } catch (error) {
       console.error(`❌ Failed to unregister shortcut ${shortcutKey}:`, error);
       return false;
@@ -202,7 +200,6 @@ class GlobalShortcutManager {
       globalShortcut.unregisterAll();
 
       console.log('✅ All global shortcuts unregistered');
-
     } catch (error) {
       console.error('❌ Failed to unregister all shortcuts:', error);
     }
@@ -237,7 +234,6 @@ class GlobalShortcutManager {
 
       console.log('✅ Global shortcuts updated successfully');
       return true;
-
     } catch (error) {
       console.error('❌ Failed to update shortcuts:', error);
       return false;
@@ -256,8 +252,18 @@ class GlobalShortcutManager {
     }
 
     // 基本的な形式チェック
-    const validModifiers = ['CommandOrControl', 'Command', 'Ctrl', 'Control', 'Alt', 'Option', 'Shift', 'Super'];
-    const validKeys = /^[A-Z0-9]$|^F[1-9]$|^F1[0-2]$|^(Space|Tab|Escape|Enter|Up|Down|Left|Right|Home|End|PageUp|PageDown|Insert|Delete|Backspace|Comma|Period|Semicolon|Quote|Backquote|Minus|Equal|BracketLeft|BracketRight|Backslash|Slash)$/;
+    const validModifiers = [
+      'CommandOrControl',
+      'Command',
+      'Ctrl',
+      'Control',
+      'Alt',
+      'Option',
+      'Shift',
+      'Super',
+    ];
+    const validKeys =
+      /^[A-Z0-9]$|^F[1-9]$|^F1[0-2]$|^(Space|Tab|Escape|Enter|Up|Down|Left|Right|Home|End|PageUp|PageDown|Insert|Delete|Backspace|Comma|Period|Semicolon|Quote|Backquote|Minus|Equal|BracketLeft|BracketRight|Backslash|Slash)$/;
 
     const parts = accelerator.split('+');
 
@@ -374,7 +380,6 @@ class GlobalShortcutManager {
       }
 
       return shouldContinue;
-
     } catch (error) {
       console.error('❌ Error handling shortcut conflict:', error);
       return false;
@@ -447,7 +452,6 @@ class GlobalShortcutManager {
       this.isInitialized = false;
 
       console.log('✅ GlobalShortcutManager shutdown completed');
-
     } catch (error) {
       console.error('❌ Error during GlobalShortcutManager shutdown:', error);
     }
