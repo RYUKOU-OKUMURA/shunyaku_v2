@@ -1081,14 +1081,16 @@
     };
 
     // 各イベントリスナーを設定
-    activityEvents.forEach(eventType => {
+    activityEvents.forEach((eventType) => {
       hudContainer.addEventListener(eventType, activityHandler, { passive: true });
     });
   }
 
   // 自動非表示警告の表示
   function showAutoHideWarning() {
-    if (isPinnedMode) {return;} // 固定モード時は表示しない
+    if (isPinnedMode) {
+      return;
+    } // 固定モード時は表示しない
 
     let warningElement = document.getElementById('autoHideWarning');
     if (!warningElement) {
@@ -1134,7 +1136,7 @@
   // リソースのクリーンアップ
   function cleanupAutoHide() {
     // イベントリスナーを清理
-    autoHideCleanupFunctions.forEach(cleanup => {
+    autoHideCleanupFunctions.forEach((cleanup) => {
       if (typeof cleanup === 'function') {
         cleanup();
       }

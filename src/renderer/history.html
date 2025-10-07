@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shunyaku v2 - Translation History</title>
+    <link rel="stylesheet" href="history.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>Translation History</h1>
+        <div class="header-stats">
+          <span id="history-count" class="stat-item">0 translations</span>
+          <span id="last-updated" class="stat-item">Never used</span>
+        </div>
+      </header>
+
+      <main class="history-main">
+        <!-- Search and Filter Section -->
+        <section class="search-section">
+          <div class="search-container">
+            <div class="search-input-group">
+              <input
+                type="text"
+                id="search-input"
+                class="search-input"
+                placeholder="Search in original or translated text..."
+                autocomplete="off"
+              />
+              <button type="button" id="search-btn" class="search-btn" title="Search">
+                <span class="btn-icon">🔍</span>
+              </button>
+              <button type="button" id="clear-search" class="clear-search-btn" title="Clear search">
+                <span class="btn-icon">✕</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label for="language-filter">Language:</label>
+              <select id="language-filter" class="filter-select">
+                <option value="">All languages</option>
+                <option value="en-ja">English → Japanese</option>
+                <option value="ja-en">Japanese → English</option>
+                <option value="en-ko">English → Korean</option>
+                <option value="ko-en">Korean → English</option>
+                <option value="zh-ja">Chinese → Japanese</option>
+                <option value="zh-en">Chinese → English</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="date-filter">Date:</label>
+              <select id="date-filter" class="filter-select">
+                <option value="">All time</option>
+                <option value="today">Today</option>
+                <option value="week">This week</option>
+                <option value="month">This month</option>
+                <option value="year">This year</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="type-filter">Type:</label>
+              <select id="type-filter" class="filter-select">
+                <option value="">All types</option>
+                <option value="shortcut">Shortcut triggered</option>
+                <option value="manual">Manual input</option>
+                <option value="favorites">Favorites only</option>
+              </select>
+            </div>
+
+            <div class="view-controls">
+              <button type="button" id="view-list" class="view-btn active" title="List view">
+                <span class="btn-icon">☰</span>
+              </button>
+              <button type="button" id="view-grid" class="view-btn" title="Grid view">
+                <span class="btn-icon">⊞</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Action Bar -->
+        <section class="action-bar">
+          <div class="action-left">
+            <label class="checkbox-container">
+              <input type="checkbox" id="select-all" />
+              <span class="checkmark"></span>
+              <span class="checkbox-label">Select All</span>
+            </label>
+            <span id="selection-count" class="selection-info">0 selected</span>
+          </div>
+
+          <div class="action-right">
+            <button type="button" id="export-selected" class="btn btn-secondary btn-small" disabled>
+              <span class="btn-icon">📤</span>
+              Export
+            </button>
+            <button type="button" id="delete-selected" class="btn btn-danger btn-small" disabled>
+              <span class="btn-icon">🗑</span>
+              Delete Selected
+            </button>
+          </div>
+        </section>
+
+        <!-- History List -->
+        <section class="history-section">
+          <div id="history-container" class="history-container">
+            <div id="history-list" class="history-list">
+              <!-- History items will be populated dynamically -->
+            </div>
+
+            <!-- Empty state -->
+            <div id="empty-state" class="empty-state" style="display: none">
+              <div class="empty-icon">📝</div>
+              <h3>No translation history</h3>
+              <p>Start translating to see your history here.</p>
+              <button type="button" id="start-translating" class="btn btn-primary">
+                <span class="btn-icon">🌍</span>
+                Start Translating
+              </button>
+            </div>
+
+            <!-- No results state -->
+            <div id="no-results" class="empty-state" style="display: none">
+              <div class="empty-icon">🔍</div>
+              <h3>No results found</h3>
+              <p>Try adjusting your search terms or filters.</p>
+              <button type="button" id="clear-filters" class="btn btn-secondary">
+                <span class="btn-icon">🔄</span>
+                Clear Filters
+              </button>
+            </div>
+
+            <!-- Loading state -->
+            <div id="loading-state" class="loading-state" style="display: none">
+              <div class="loading-spinner"></div>
+              <p>Loading history...</p>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div id="pagination" class="pagination" style="display: none">
+            <button type="button" id="prev-page" class="pagination-btn" disabled>
+              <span class="btn-icon">←</span>
+              Previous
+            </button>
+            <span id="page-info" class="page-info">Page 1 of 1</span>
+            <button type="button" id="next-page" class="pagination-btn" disabled>
+              Next
+              <span class="btn-icon">→</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- History Statistics -->
+        <section class="stats-section">
+          <h2>Statistics</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="total-translations">0</div>
+              <div class="stat-label">Total Translations</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="most-used-source">-</div>
+              <div class="stat-label">Most Used Source</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="most-used-target">-</div>
+              <div class="stat-label">Most Used Target</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="avg-confidence">-</div>
+              <div class="stat-label">Avg. Confidence</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Management Section -->
+        <section class="management-section">
+          <h2>History Management</h2>
+          <div class="management-controls">
+            <div class="control-group">
+              <label for="max-history">Maximum history items:</label>
+              <input
+                type="number"
+                id="max-history"
+                min="10"
+                max="1000"
+                value="100"
+                class="number-input"
+              />
+              <button type="button" id="update-limit" class="btn btn-secondary btn-small">
+                Update
+              </button>
+            </div>
+
+            <div class="control-group">
+              <label>Clear history:</label>
+              <div class="button-group">
+                <button type="button" id="clear-old" class="btn btn-warning btn-small">
+                  <span class="btn-icon">🗓</span>
+                  Clear Old (30+ days)
+                </button>
+                <button type="button" id="clear-all" class="btn btn-danger btn-small">
+                  <span class="btn-icon">🗑</span>
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label>Import/Export:</label>
+              <div class="button-group">
+                <button type="button" id="import-history" class="btn btn-secondary btn-small">
+                  <span class="btn-icon">📥</span>
+                  Import
+                </button>
+                <button type="button" id="export-history" class="btn btn-secondary btn-small">
+                  <span class="btn-icon">📤</span>
+                  Export All
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <div class="footer-actions">
+          <button type="button" id="close-history" class="btn btn-ghost">
+            <span class="btn-icon">✕</span>
+            Close
+          </button>
+          <button type="button" id="open-settings" class="btn btn-ghost">
+            <span class="btn-icon">⚙</span>
+            Settings
+          </button>
+        </div>
+        <div class="footer-info">
+          <small>Shunyaku v2 - Translation History</small>
+        </div>
+      </footer>
+    </div>
+
+    <!-- History Item Template -->
+    <template id="history-item-template">
+      <div class="history-item" data-id="">
+        <div class="item-header">
+          <label class="item-checkbox">
+            <input type="checkbox" class="item-select" />
+            <span class="checkmark"></span>
+          </label>
+          <div class="item-meta">
+            <span class="item-timestamp"></span>
+            <span class="item-languages"></span>
+            <span class="item-confidence"></span>
+          </div>
+          <div class="item-actions">
+            <button type="button" class="item-btn favorite-btn" title="Toggle favorite">
+              <span class="btn-icon">☆</span>
+            </button>
+            <button type="button" class="item-btn copy-btn" title="Copy translation">
+              <span class="btn-icon">📋</span>
+            </button>
+            <button type="button" class="item-btn delete-btn" title="Delete">
+              <span class="btn-icon">🗑</span>
+            </button>
+          </div>
+        </div>
+        <div class="item-content">
+          <div class="text-content">
+            <div class="original-text">
+              <div class="text-label">Original:</div>
+              <div class="text-value"></div>
+            </div>
+            <div class="translation-arrow">→</div>
+            <div class="translated-text">
+              <div class="text-label">Translation:</div>
+              <div class="text-value"></div>
+            </div>
+          </div>
+          <div class="item-details" style="display: none">
+            <div class="detail-row">
+              <span class="detail-label">Workflow ID:</span>
+              <span class="detail-value workflow-id"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Trigger:</span>
+              <span class="detail-value trigger-method"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Full timestamp:</span>
+              <span class="detail-value full-timestamp"></span>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="item-toggle-details">
+          <span class="toggle-text">Show details</span>
+          <span class="toggle-icon">▼</span>
+        </button>
+      </div>
+    </template>
+
+    <!-- Confirmation Dialog Template -->
+    <template id="confirmation-dialog-template">
+      <div class="modal-overlay">
+        <div class="modal-dialog">
+          <div class="modal-header">
+            <h3 class="modal-title"></h3>
+            <button type="button" class="modal-close" aria-label="Close">
+              <span class="btn-icon">✕</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-message"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+            <button type="button" class="btn btn-danger modal-confirm">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- File input for import (hidden) -->
+    <input type="file" id="import-file-input" accept=".json" style="display: none" />
+
+    <!-- Status messages -->
+    <div id="status-messages" class="status-messages" aria-live="polite"></div>
+
+    <script src="history.js"></script>
+  </body>
+</html>

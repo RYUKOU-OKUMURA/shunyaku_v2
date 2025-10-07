@@ -134,22 +134,22 @@ if (isMainThread) {
   parentPort.on('message', async (message) => {
     try {
       switch (message.command) {
-        case 'initialize':
-          await initializeTesseract(message.tessdataPath);
-          parentPort.postMessage({ type: 'initialized' });
-          break;
+      case 'initialize':
+        await initializeTesseract(message.tessdataPath);
+        parentPort.postMessage({ type: 'initialized' });
+        break;
 
-        case 'recognize': {
-          const result = await performOCR(message.imagePath, message.language, message.options);
-          parentPort.postMessage({
-            type: 'recognition-complete',
-            result,
-          });
-          break;
-        }
+      case 'recognize': {
+        const result = await performOCR(message.imagePath, message.language, message.options);
+        parentPort.postMessage({
+          type: 'recognition-complete',
+          result,
+        });
+        break;
+      }
 
-        default:
-          throw new Error(`Unknown command: ${message.command}`);
+      default:
+        throw new Error(`Unknown command: ${message.command}`);
       }
     } catch (error) {
       parentPort.postMessage({

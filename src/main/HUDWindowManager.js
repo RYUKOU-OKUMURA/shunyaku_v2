@@ -503,10 +503,11 @@ class HUDWindowManager {
         if (this.hudWindow && !this.hudWindow.isDestroyed() && this.hudWindow.webContents) {
           this.hudWindow.webContents.send('hud-auto-hiding');
         }
-        
+
         // HUDを非表示にする
         setTimeout(() => {
-          if (this.isVisible && !this.isPinned) { // 再チェック
+          if (this.isVisible && !this.isPinned) {
+            // 再チェック
             this.hideHUD();
           }
         }, 1000); // 1秒の猶予を与える
@@ -540,7 +541,7 @@ class HUDWindowManager {
    */
   setPinnedMode(pinned) {
     this.isPinned = pinned;
-    
+
     if (pinned) {
       // 固定モード: タイマーをクリア
       this.clearAutoHideTimer();
@@ -574,7 +575,7 @@ class HUDWindowManager {
     if (this.hudWindow && !this.hudWindow.isDestroyed() && this.hudWindow.webContents) {
       this.hudWindow.webContents.send('hud-user-activity');
     }
-    
+
     // タイマーをリセット
     this.resetAutoHideTimer();
   }

@@ -179,17 +179,17 @@ class AppLifecycleManager {
       });
 
       switch (result.response) {
-        case 0: // システム環境設定を開く
-          await this.openSystemPreferences();
-          await this.waitForPermissionAndRestart();
-          break;
-        case 1: // あとで設定する
-          console.log('AppLifecycleManager: 権限設定を後回しにしました');
-          break;
-        case 2: // アプリを終了
-          console.log('AppLifecycleManager: ユーザーがアプリ終了を選択しました');
-          app.quit();
-          break;
+      case 0: // システム環境設定を開く
+        await this.openSystemPreferences();
+        await this.waitForPermissionAndRestart();
+        break;
+      case 1: // あとで設定する
+        console.log('AppLifecycleManager: 権限設定を後回しにしました');
+        break;
+      case 2: // アプリを終了
+        console.log('AppLifecycleManager: ユーザーがアプリ終了を選択しました');
+        app.quit();
+        break;
       }
     } catch (error) {
       console.error('AppLifecycleManager: 権限ガイド表示エラー', error);
@@ -255,7 +255,7 @@ class AppLifecycleManager {
           } else {
             this.retryConfig.currentRetries++;
             console.log(
-              `AppLifecycleManager: 権限チェック中... (${this.retryConfig.currentRetries}/${this.retryConfig.maxRetries})`
+              `AppLifecycleManager: 権限チェック中... (${this.retryConfig.currentRetries}/${this.retryConfig.maxRetries})`,
             );
 
             // 最大リトライ回数に達した場合

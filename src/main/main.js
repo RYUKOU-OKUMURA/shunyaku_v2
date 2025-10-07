@@ -6,6 +6,7 @@ const HUDWindowManager = require('./HUDWindowManager');
 const SettingsStore = require('../services/SettingsStore');
 const KeychainManager = require('../services/KeychainManager');
 const TranslationService = require('../services/TranslationService');
+const TranslationHistoryStore = require('../services/TranslationHistoryStore');
 const AppLifecycleManager = require('../services/AppLifecycleManager');
 const CaptureService = require('../services/CaptureService');
 const OCRService = require('../services/OCRService');
@@ -21,10 +22,12 @@ const GlobalShortcutManager = require('../services/GlobalShortcutManager');
 
 let mainWindow = null;
 let settingsWindow = null;
+let historyWindow = null;
 let hudWindowManager = null;
 let settingsStore = null;
 let keychainManager = null;
 let translationService = null;
+let translationHistoryStore = null;
 let appLifecycleManager = null;
 let captureService = null;
 let ocrService = null;
@@ -78,6 +81,7 @@ app.whenReady().then(async () => {
   settingsStore = new SettingsStore();
   keychainManager = new KeychainManager();
   translationService = new TranslationService();
+  translationHistoryStore = new TranslationHistoryStore();
   captureService = new CaptureService();
   ocrService = new OCRService();
 
@@ -200,6 +204,56 @@ function createSettingsWindow() {
 }
 
 /**
+ * 履歴ウィンドウを作成
+ */
+function createHistoryWindow() {
+  // 既に履歴ウィンドウが開いている場合はフォーカスを当てる
+  if (historyWindow && !historyWindow.isDestroyed()) {
+    historyWindow.focus();
+    return;
+  }
+
+  historyWindow = new BrowserWindow({
+    width: 1000,
+    height: 800,
+    minWidth: 800,
+    minHeight: 600,
+    show: false,
+    resizable: true,
+    maximizable: true,
+    fullscreenable: false,
+    title: 'Shunyaku v2 - Translation History',
+    titleBarStyle: 'hiddenInset',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, '../renderer/history-preload.js'),
+      webSecurity: true,
+    },
+  });
+
+  // 履歴画面のHTMLをロード
+  historyWindow.loadFile(path.join(__dirname, '../renderer/history.html'));
+
+  // ウィンドウの準備ができたら表示
+  historyWindow.once('ready-to-show', () => {
+    historyWindow.show();
+
+    // 開発時はDevToolsを開く
+    if (process.env.NODE_ENV === 'development' || process.argv.includes('--dev')) {
+      historyWindow.webContents.openDevTools();
+    }
+  });
+
+  // ウィンドウが閉じられたときのクリーンアップ
+  historyWindow.on('closed', () => {
+    historyWindow = null;
+  });
+
+  return historyWindow;
+}
+
+/**
  * アプリケーションメニューの設定（macOS用）
  */
 function setupApplicationMenu() {
@@ -215,6 +269,13 @@ function setupApplicationMenu() {
             accelerator: 'CmdOrCtrl+,',
             click: () => {
               createSettingsWindow();
+            },
+          },
+          {
+            label: 'Translation History...',
+            accelerator: 'CmdOrCtrl+H',
+            click: () => {
+              createHistoryWindow();
             },
           },
           { type: 'separator' },
@@ -516,7 +577,7 @@ function setupIPCHandlers() {
           errorType: getTranslationErrorType(error),
         };
       }
-    }
+    },
   );
 
   // 翻訳設定の取得
@@ -934,6 +995,356 @@ function setupIPCHandlers() {
       };
     }
   });
+
+  // === Translation History IPC Handlers (Task 4.2) ===
+
+  // 履歴ウィンドウ制御
+  ipcMain.handle('open-history-window', () => {
+    createHistoryWindow();
+  });
+
+  ipcMain.handle('close-history-window', () => {
+    if (historyWindow && !historyWindow.isDestroyed()) {
+      historyWindow.close();
+    }
+  });
+
+  ipcMain.handle('minimize-history-window', () => {
+    if (historyWindow && !historyWindow.isDestroyed()) {
+      historyWindow.minimize();
+    }
+  });
+
+  // 履歴データ取得
+  ipcMain.handle('get-translation-history', async (event, options = {}) => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      const history = translationHistoryStore.getTranslations(options);
+      return {
+        success: true,
+        history: history,
+      };
+    } catch (error) {
+      console.error('Failed to get translation history:', error);
+      return {
+        success: false,
+        error: error.message,
+        history: [],
+      };
+    }
+  });
+
+  ipcMain.handle('get-translation-history-stats', async () => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      const stats = translationHistoryStore.getStats();
+      const count = translationHistoryStore.getHistoryCount();
+
+      return {
+        success: true,
+        stats: {
+          ...stats,
+          totalTranslations: count,
+        },
+      };
+    } catch (error) {
+      console.error('Failed to get translation history stats:', error);
+      return {
+        success: false,
+        error: error.message,
+        stats: {
+          totalTranslations: 0,
+          lastUsed: null,
+          mostUsedSourceLanguage: null,
+          mostUsedTargetLanguage: null,
+        },
+      };
+    }
+  });
+
+  ipcMain.handle('get-translation-history-settings', async () => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      return {
+        success: true,
+        settings: {
+          maxItems: translationHistoryStore.store?.get('maxItems', 100) || 100,
+        },
+      };
+    } catch (error) {
+      console.error('Failed to get translation history settings:', error);
+      return {
+        success: false,
+        error: error.message,
+        settings: {
+          maxItems: 100,
+        },
+      };
+    }
+  });
+
+  // 履歴検索
+  ipcMain.handle('search-translation-history', async (event, query, options = {}) => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      const results = translationHistoryStore.searchTranslations(query, options);
+      return {
+        success: true,
+        results: results,
+      };
+    } catch (error) {
+      console.error('Failed to search translation history:', error);
+      return {
+        success: false,
+        error: error.message,
+        results: [],
+      };
+    }
+  });
+
+  // 履歴操作
+  ipcMain.handle('toggle-translation-favorite', async (event, itemId) => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      const favorite = translationHistoryStore.toggleFavorite(itemId);
+      return {
+        success: true,
+        favorite: favorite,
+      };
+    } catch (error) {
+      console.error('Failed to toggle translation favorite:', error);
+      return {
+        success: false,
+        error: error.message,
+        favorite: false,
+      };
+    }
+  });
+
+  ipcMain.handle('delete-translation-history', async (event, itemId) => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      const success = translationHistoryStore.deleteTranslation(itemId);
+      return {
+        success: success,
+        message: success ? 'Translation deleted successfully' : 'Translation not found',
+      };
+    } catch (error) {
+      console.error('Failed to delete translation history:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('delete-translation-histories', async (event, itemIds) => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      const result = translationHistoryStore.deleteTranslations(itemIds);
+      return result;
+    } catch (error) {
+      console.error('Failed to delete translation histories:', error);
+      return {
+        success: false,
+        error: error.message,
+        deletedCount: 0,
+        requestedCount: itemIds?.length || 0,
+      };
+    }
+  });
+
+  ipcMain.handle('clear-translation-history', async (event, options = {}) => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      translationHistoryStore.clearHistory(options);
+      return {
+        success: true,
+        message: 'Translation history cleared successfully',
+      };
+    } catch (error) {
+      console.error('Failed to clear translation history:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  // インポート/エクスポート
+  ipcMain.handle('export-translation-history', async (event, items) => {
+    try {
+      const { dialog } = require('electron');
+
+      const result = await dialog.showSaveDialog(historyWindow || mainWindow, {
+        title: 'Export Translation History',
+        defaultPath: `shunyaku-history-${new Date().toISOString().split('T')[0]}.json`,
+        filters: [
+          { name: 'JSON Files', extensions: ['json'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+
+      if (result.canceled) {
+        return {
+          success: false,
+          message: 'Export canceled',
+        };
+      }
+
+      const fs = require('fs').promises;
+      const exportData = {
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        items: items,
+        count: items.length,
+      };
+
+      await fs.writeFile(result.filePath, JSON.stringify(exportData, null, 2), 'utf8');
+
+      return {
+        success: true,
+        filePath: result.filePath,
+        count: items.length,
+      };
+    } catch (error) {
+      console.error('Failed to export translation history:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('import-translation-history', async (event, data, merge = false) => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      if (!data || !data.items) {
+        throw new Error('Invalid import data format');
+      }
+
+      translationHistoryStore.importData(data, merge);
+
+      return {
+        success: true,
+        importedCount: data.items.length,
+        message: 'Translation history imported successfully',
+      };
+    } catch (error) {
+      console.error('Failed to import translation history:', error);
+      return {
+        success: false,
+        error: error.message,
+        importedCount: 0,
+      };
+    }
+  });
+
+  // 設定更新
+  ipcMain.handle('update-max-translation-history', async (event, maxItems) => {
+    try {
+      if (!translationHistoryStore) {
+        throw new Error('TranslationHistoryStore not initialized');
+      }
+
+      translationHistoryStore.setMaxItems(maxItems);
+
+      return {
+        success: true,
+        maxItems: maxItems,
+        message: 'Max history items updated successfully',
+      };
+    } catch (error) {
+      console.error('Failed to update max translation history:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  // ファイルダイアログ
+  ipcMain.handle('show-open-file-dialog', async (event, options) => {
+    try {
+      const { dialog } = require('electron');
+      const result = await dialog.showOpenDialog(historyWindow || mainWindow, options);
+      return result;
+    } catch (error) {
+      console.error('Failed to show open file dialog:', error);
+      return {
+        canceled: true,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle('show-save-file-dialog', async (event, options) => {
+    try {
+      const { dialog } = require('electron');
+      const result = await dialog.showSaveDialog(historyWindow || mainWindow, options);
+      return result;
+    } catch (error) {
+      console.error('Failed to show save file dialog:', error);
+      return {
+        canceled: true,
+        error: error.message,
+      };
+    }
+  });
+
+  // システム情報取得
+  ipcMain.handle('get-system-info', async () => {
+    try {
+      const os = require('os');
+      return {
+        success: true,
+        info: {
+          platform: process.platform,
+          arch: process.arch,
+          nodeVersion: process.version,
+          electronVersion: process.versions.electron,
+          appVersion: app.getVersion(),
+          totalMemory: os.totalmem(),
+          freeMemory: os.freemem(),
+          cpus: os.cpus().length,
+        },
+      };
+    } catch (error) {
+      console.error('Failed to get system info:', error);
+      return {
+        success: false,
+        error: error.message,
+        info: {},
+      };
+    }
+  });
 }
 
 /**
@@ -976,6 +1387,11 @@ app.on('before-quit', async (_event) => {
     settingsWindow = null;
   }
 
+  if (historyWindow && !historyWindow.isDestroyed()) {
+    historyWindow.destroy();
+    historyWindow = null;
+  }
+
   if (hudWindowManager) {
     hudWindowManager.destroy();
     hudWindowManager = null;
@@ -1000,6 +1416,11 @@ app.on('before-quit', async (_event) => {
   if (globalShortcutManager) {
     await globalShortcutManager.shutdown();
     globalShortcutManager = null;
+  }
+
+  if (translationHistoryStore) {
+    translationHistoryStore.destroy();
+    translationHistoryStore = null;
   }
 
   settingsStore = null;
@@ -1261,7 +1682,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     // OCR結果の処理
     if (ocrResult.status === 'rejected' || !ocrResult.value.success) {
       throw new Error(
-        `OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`
+        `OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`,
       );
     }
 
@@ -1279,7 +1700,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     };
 
     console.log(
-      `✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`
+      `✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`,
     );
 
     // 翻訳サービス初期化結果の確認
@@ -1294,7 +1715,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     const translationResult = await translationService.translate(
       ocrData.text,
       'auto',
-      translationSettings.targetLanguage || 'ja'
+      translationSettings.targetLanguage || 'ja',
     );
 
     performanceMetrics.phases.translation = {
@@ -1339,6 +1760,30 @@ async function executeFullTranslationWorkflow(options = {}) {
 
     console.log(`✅ HUD displayed at position (${mousePosition.x}, ${mousePosition.y})`);
 
+    // Phase 6: 履歴保存（Task 4.2.1）
+    try {
+      if (translationHistoryStore) {
+        const historyItemId = translationHistoryStore.addTranslation({
+          originalText: ocrData.text,
+          translatedText: translationResult.text,
+          sourceLanguage: translationResult.sourceLanguage,
+          targetLanguage: translationResult.targetLanguage,
+          confidence: ocrData.confidence,
+          workflowId: workflowId,
+          triggerMethod: options.triggerMethod || 'shortcut',
+        });
+
+        if (historyItemId) {
+          console.log(`📝 Translation saved to history: ${historyItemId}`);
+        } else {
+          console.log('📝 Translation not saved (duplicate within 5 minutes)');
+        }
+      }
+    } catch (historyError) {
+      // 履歴保存エラーはワークフロー全体を失敗させない
+      console.warn('⚠️ Failed to save translation history:', historyError.message);
+    }
+
     // 一時ファイルのクリーンアップを並列で実行（パフォーマンス最適化）
     const cleanupPromise = captureService.deleteTempFile(imagePath).catch((cleanupError) => {
       console.warn('Temp file cleanup warning:', cleanupError.message);
@@ -1349,7 +1794,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     performanceMetrics.success = true;
 
     console.log(
-      `✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`
+      `✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`,
     );
     logPerformanceMetrics(performanceMetrics);
 
@@ -1378,7 +1823,7 @@ async function executeFullTranslationWorkflow(options = {}) {
 
     console.error(
       `❌ Workflow failed after ${performanceMetrics.totalTime}ms [${workflowId}]:`,
-      error
+      error,
     );
     logPerformanceMetrics(performanceMetrics);
 
@@ -1465,16 +1910,16 @@ function determineOCRLanguage(translationSettings) {
 
   // 具体的な言語が指定されている場合
   switch (sourceLanguage) {
-    case 'en':
-      return 'eng';
-    case 'ja':
-      return 'jpn';
-    case 'ko':
-      return 'kor';
-    case 'zh':
-      return 'chi_sim';
-    default:
-      return 'eng+jpn'; // フォールバック
+  case 'en':
+    return 'eng';
+  case 'ja':
+    return 'jpn';
+  case 'ko':
+    return 'kor';
+  case 'zh':
+    return 'chi_sim';
+  default:
+    return 'eng+jpn'; // フォールバック
   }
 }
 
@@ -1620,32 +2065,32 @@ function getHumanReadableError(error, errorType) {
   const baseMessage = error.message || '不明なエラーが発生しました';
 
   switch (errorType) {
-    case 'permission':
-      return 'スクリーンキャプチャの権限が不足しています。システム環境設定で権限を許可してください。';
+  case 'permission':
+    return 'スクリーンキャプチャの権限が不足しています。システム環境設定で権限を許可してください。';
 
-    case 'api_key':
-      return 'DeepL APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
+  case 'api_key':
+    return 'DeepL APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
 
-    case 'network':
-      return 'ネットワーク接続に問題があります。インターネット接続を確認してください。';
+  case 'network':
+    return 'ネットワーク接続に問題があります。インターネット接続を確認してください。';
 
-    case 'ocr':
-      return 'テキスト認識（OCR）に失敗しました。画像が鮮明か、テキストが読み取りやすいか確認してください。';
+  case 'ocr':
+    return 'テキスト認識（OCR）に失敗しました。画像が鮮明か、テキストが読み取りやすいか確認してください。';
 
-    case 'capture':
-      return 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
+  case 'capture':
+    return 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
 
-    case 'translation':
-      return '翻訳サービスに問題があります。APIキーや使用量を確認してください。';
+  case 'translation':
+    return '翻訳サービスに問題があります。APIキーや使用量を確認してください。';
 
-    case 'resource':
-      return 'システムリソースが不足しています。メモリやディスク容量を確認してください。';
+  case 'resource':
+    return 'システムリソースが不足しています。メモリやディスク容量を確認してください。';
 
-    case 'initialization':
-      return 'アプリケーションの初期化に失敗しました。アプリを再起動してください。';
+  case 'initialization':
+    return 'アプリケーションの初期化に失敗しました。アプリを再起動してください。';
 
-    default:
-      return baseMessage.length > 100 ? baseMessage.substring(0, 100) + '...' : baseMessage;
+  default:
+    return baseMessage.length > 100 ? baseMessage.substring(0, 100) + '...' : baseMessage;
   }
 }
 
@@ -1656,39 +2101,39 @@ function getHumanReadableError(error, errorType) {
  */
 function getErrorSuggestions(errorType) {
   switch (errorType) {
-    case 'permission':
-      return [
-        'システム環境設定を開いて、プライバシーとセキュリティからスクリーン録画権限を許可',
-        'アプリを再起動して権限を再確認',
-      ];
+  case 'permission':
+    return [
+      'システム環境設定を開いて、プライバシーとセキュリティからスクリーン録画権限を許可',
+      'アプリを再起動して権限を再確認',
+    ];
 
-    case 'api_key':
-      return [
-        '設定画面からDeepL APIキーを正しく入力',
-        'DeepLのアカウント情報とAPIキーの有効性を確認',
-      ];
+  case 'api_key':
+    return [
+      '設定画面からDeepL APIキーを正しく入力',
+      'DeepLのアカウント情報とAPIキーの有効性を確認',
+    ];
 
-    case 'network':
-      return [
-        'インターネット接続を確認',
-        'ファイアウォール設定でアプリを許可',
-        'しばらく時間を置いてから再試行',
-      ];
+  case 'network':
+    return [
+      'インターネット接続を確認',
+      'ファイアウォール設定でアプリを許可',
+      'しばらく時間を置いてから再試行',
+    ];
 
-    case 'ocr':
-      return [
-        'より鮮明な画像や高解像度のスクリーンショットを使用',
-        '文字サイズが大きい範囲を選択',
-        '背景と文字のコントラストが高い範囲を選択',
-      ];
+  case 'ocr':
+    return [
+      'より鮮明な画像や高解像度のスクリーンショットを使用',
+      '文字サイズが大きい範囲を選択',
+      '背景と文字のコントラストが高い範囲を選択',
+    ];
 
-    case 'capture':
-      return ['スクリーンキャプチャの権限を再確認', 'アプリを再起動'];
+  case 'capture':
+    return ['スクリーンキャプチャの権限を再確認', 'アプリを再起動'];
 
-    case 'translation':
-      return ['DeepL APIの使用量を確認', 'APIキーの有効性を確認', 'しばらく時間を置いてから再試行'];
+  case 'translation':
+    return ['DeepL APIの使用量を確認', 'APIキーの有効性を確認', 'しばらく時間を置いてから再試行'];
 
-    default:
-      return ['アプリを再起動してみてください', '問題が続く場合はサポートにお問い合わせください'];
+  default:
+    return ['アプリを再起動してみてください', '問題が続く場合はサポートにお問い合わせください'];
   }
 }
