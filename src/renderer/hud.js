@@ -259,24 +259,24 @@
     let statusMessage = '';
 
     switch (copyType) {
-    case 'original':
-      textToCopy = elements.originalText?.textContent || '';
-      statusMessage = '原文をコピー';
-      break;
-    case 'translated':
-      textToCopy = elements.translatedText?.textContent || '';
-      statusMessage = '翻訳文をコピー';
-      break;
-    case 'both': {
-      const original = elements.originalText?.textContent || '';
-      const translated = elements.translatedText?.textContent || '';
-      textToCopy = `原文: ${original}\n\n翻訳: ${translated}`;
-      statusMessage = '原文と翻訳をコピー';
-      break;
-    }
-    default:
-      textToCopy = elements.translatedText?.textContent || '';
-      statusMessage = 'コピー';
+      case 'original':
+        textToCopy = elements.originalText?.textContent || '';
+        statusMessage = '原文をコピー';
+        break;
+      case 'translated':
+        textToCopy = elements.translatedText?.textContent || '';
+        statusMessage = '翻訳文をコピー';
+        break;
+      case 'both': {
+        const original = elements.originalText?.textContent || '';
+        const translated = elements.translatedText?.textContent || '';
+        textToCopy = `原文: ${original}\n\n翻訳: ${translated}`;
+        statusMessage = '原文と翻訳をコピー';
+        break;
+      }
+      default:
+        textToCopy = elements.translatedText?.textContent || '';
+        statusMessage = 'コピー';
     }
 
     if (!textToCopy.trim()) {
@@ -710,33 +710,33 @@
     // エラー種別に応じてユーザーフレンドリーなメッセージに変換
     if (errorType) {
       switch (errorType) {
-      case 'api_key':
-        displayMessage =
+        case 'api_key':
+          displayMessage =
             'APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
-        errorClass = 'error-warning';
-        break;
-      case 'quota_exceeded':
-        displayMessage =
+          errorClass = 'error-warning';
+          break;
+        case 'quota_exceeded':
+          displayMessage =
             'API使用量の上限に達しました。しばらく時間をおいてから再試行してください。';
-        errorClass = 'error-warning';
-        break;
-      case 'network':
-        displayMessage = 'ネットワークエラーです。インターネット接続を確認してください。';
-        errorClass = 'error-error';
-        break;
-      case 'validation':
-        displayMessage = '入力テキストに問題があります。内容を確認してください。';
-        errorClass = 'error-info';
-        break;
-      case 'ocr_failed':
-        displayMessage =
+          errorClass = 'error-warning';
+          break;
+        case 'network':
+          displayMessage = 'ネットワークエラーです。インターネット接続を確認してください。';
+          errorClass = 'error-error';
+          break;
+        case 'validation':
+          displayMessage = '入力テキストに問題があります。内容を確認してください。';
+          errorClass = 'error-info';
+          break;
+        case 'ocr_failed':
+          displayMessage =
             'テキスト認識に失敗しました。画像が不鮮明または文字が小さすぎる可能性があります。';
-        errorClass = 'error-warning';
-        break;
-      case 'capture_failed':
-        displayMessage = 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
-        errorClass = 'error-error';
-        break;
+          errorClass = 'error-warning';
+          break;
+        case 'capture_failed':
+          displayMessage = 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
+          errorClass = 'error-error';
+          break;
       }
     }
 
@@ -795,32 +795,32 @@
     hideError();
 
     switch (errorType) {
-    case 'api_key':
-      // 設定画面を開く
-      if (window.electronAPI && window.electronAPI.openSettings) {
-        window.electronAPI.openSettings();
-      }
-      break;
-    case 'network':
-    case 'quota_exceeded':
-    case 'validation':
-      // 前回の翻訳を再実行
-      refreshTranslation();
-      break;
-    case 'ocr_failed':
-    case 'capture_failed':
-      // 完全フローを再実行
-      if (window.HUD && window.HUD.executeFullWorkflow) {
-        window.HUD.executeFullWorkflow();
-      }
-      break;
-    default:
-      // デフォルトの再試行
-      if (elements.originalText?.textContent) {
+      case 'api_key':
+        // 設定画面を開く
+        if (window.electronAPI && window.electronAPI.openSettings) {
+          window.electronAPI.openSettings();
+        }
+        break;
+      case 'network':
+      case 'quota_exceeded':
+      case 'validation':
+        // 前回の翻訳を再実行
         refreshTranslation();
-      } else {
-        showManualInputMode();
-      }
+        break;
+      case 'ocr_failed':
+      case 'capture_failed':
+        // 完全フローを再実行
+        if (window.HUD && window.HUD.executeFullWorkflow) {
+          window.HUD.executeFullWorkflow();
+        }
+        break;
+      default:
+        // デフォルトの再試行
+        if (elements.originalText?.textContent) {
+          refreshTranslation();
+        } else {
+          showManualInputMode();
+        }
     }
   }
 

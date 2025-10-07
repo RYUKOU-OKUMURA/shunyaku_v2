@@ -317,16 +317,16 @@ class OCRService {
 
       let processedPath;
       switch (preprocessingType) {
-      case 'high-quality':
-        processedPath = await this.imagePreprocessor.preprocessHighQuality(imagePath);
-        break;
-      case 'light':
-        processedPath = await this.imagePreprocessor.preprocessLight(imagePath);
-        break;
-      case 'standard':
-      default:
-        processedPath = await this.imagePreprocessor.preprocessStandard(imagePath);
-        break;
+        case 'high-quality':
+          processedPath = await this.imagePreprocessor.preprocessHighQuality(imagePath);
+          break;
+        case 'light':
+          processedPath = await this.imagePreprocessor.preprocessLight(imagePath);
+          break;
+        case 'standard':
+        default:
+          processedPath = await this.imagePreprocessor.preprocessStandard(imagePath);
+          break;
       }
 
       console.log(`Image preprocessed (${preprocessingType}): ${path.basename(processedPath)}`);

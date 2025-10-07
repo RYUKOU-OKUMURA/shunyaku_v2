@@ -21,13 +21,13 @@ const SETTINGS_SCHEMA = {
       // 翻訳先言語
       targetLanguage: {
         type: 'string',
-        enum: ['ja', 'en', 'zh', 'ko', 'fr', 'de', 'es', 'it', 'pt', 'ru'],
+        enum: ['ja', 'en', 'zh', 'ko', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'ar', 'nl', 'pl'],
         default: 'ja',
       },
       // 翻訳元言語（自動検出の場合は 'auto'）
       sourceLanguage: {
         type: 'string',
-        enum: ['auto', 'en', 'ja', 'zh', 'ko', 'fr', 'de', 'es', 'it', 'pt', 'ru'],
+        enum: ['auto', 'en', 'ja', 'zh', 'ko', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'ar', 'nl', 'pl'],
         default: 'auto',
       },
     },
@@ -104,12 +104,29 @@ const SETTINGS_SCHEMA = {
         maximum: 1.0,
         default: 0.95,
       },
+      // HUD表示位置
+      position: {
+        type: 'string',
+        enum: ['mouse', 'center', 'fixed'],
+        default: 'mouse',
+      },
+      // 固定位置の設定
+      fixedPosition: {
+        type: 'object',
+        properties: {
+          x: { type: 'number', minimum: 0, default: 100 },
+          y: { type: 'number', minimum: 0, default: 100 },
+        },
+        default: { x: 100, y: 100 },
+      },
     },
     default: {
       size: { width: 400, height: 300 },
       autoHideDuration: 15,
       theme: 'auto',
       opacity: 0.95,
+      position: 'mouse',
+      fixedPosition: { x: 100, y: 100 },
     },
   },
 

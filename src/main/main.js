@@ -577,7 +577,7 @@ function setupIPCHandlers() {
           errorType: getTranslationErrorType(error),
         };
       }
-    },
+    }
   );
 
   // 翻訳設定の取得
@@ -1682,7 +1682,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     // OCR結果の処理
     if (ocrResult.status === 'rejected' || !ocrResult.value.success) {
       throw new Error(
-        `OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`,
+        `OCR failed: ${ocrResult.reason?.message || ocrResult.value?.error || 'Unknown error'}`
       );
     }
 
@@ -1700,7 +1700,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     };
 
     console.log(
-      `✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`,
+      `✅ OCR completed: "${ocrData.text.substring(0, 50)}..." (confidence: ${ocrData.confidence}%)`
     );
 
     // 翻訳サービス初期化結果の確認
@@ -1715,7 +1715,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     const translationResult = await translationService.translate(
       ocrData.text,
       'auto',
-      translationSettings.targetLanguage || 'ja',
+      translationSettings.targetLanguage || 'ja'
     );
 
     performanceMetrics.phases.translation = {
@@ -1794,7 +1794,7 @@ async function executeFullTranslationWorkflow(options = {}) {
     performanceMetrics.success = true;
 
     console.log(
-      `✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`,
+      `✨ Workflow completed successfully in ${performanceMetrics.totalTime}ms [${workflowId}]`
     );
     logPerformanceMetrics(performanceMetrics);
 
@@ -1823,7 +1823,7 @@ async function executeFullTranslationWorkflow(options = {}) {
 
     console.error(
       `❌ Workflow failed after ${performanceMetrics.totalTime}ms [${workflowId}]:`,
-      error,
+      error
     );
     logPerformanceMetrics(performanceMetrics);
 
@@ -1910,16 +1910,16 @@ function determineOCRLanguage(translationSettings) {
 
   // 具体的な言語が指定されている場合
   switch (sourceLanguage) {
-  case 'en':
-    return 'eng';
-  case 'ja':
-    return 'jpn';
-  case 'ko':
-    return 'kor';
-  case 'zh':
-    return 'chi_sim';
-  default:
-    return 'eng+jpn'; // フォールバック
+    case 'en':
+      return 'eng';
+    case 'ja':
+      return 'jpn';
+    case 'ko':
+      return 'kor';
+    case 'zh':
+      return 'chi_sim';
+    default:
+      return 'eng+jpn'; // フォールバック
   }
 }
 
@@ -2065,32 +2065,32 @@ function getHumanReadableError(error, errorType) {
   const baseMessage = error.message || '不明なエラーが発生しました';
 
   switch (errorType) {
-  case 'permission':
-    return 'スクリーンキャプチャの権限が不足しています。システム環境設定で権限を許可してください。';
+    case 'permission':
+      return 'スクリーンキャプチャの権限が不足しています。システム環境設定で権限を許可してください。';
 
-  case 'api_key':
-    return 'DeepL APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
+    case 'api_key':
+      return 'DeepL APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
 
-  case 'network':
-    return 'ネットワーク接続に問題があります。インターネット接続を確認してください。';
+    case 'network':
+      return 'ネットワーク接続に問題があります。インターネット接続を確認してください。';
 
-  case 'ocr':
-    return 'テキスト認識（OCR）に失敗しました。画像が鮮明か、テキストが読み取りやすいか確認してください。';
+    case 'ocr':
+      return 'テキスト認識（OCR）に失敗しました。画像が鮮明か、テキストが読み取りやすいか確認してください。';
 
-  case 'capture':
-    return 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
+    case 'capture':
+      return 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
 
-  case 'translation':
-    return '翻訳サービスに問題があります。APIキーや使用量を確認してください。';
+    case 'translation':
+      return '翻訳サービスに問題があります。APIキーや使用量を確認してください。';
 
-  case 'resource':
-    return 'システムリソースが不足しています。メモリやディスク容量を確認してください。';
+    case 'resource':
+      return 'システムリソースが不足しています。メモリやディスク容量を確認してください。';
 
-  case 'initialization':
-    return 'アプリケーションの初期化に失敗しました。アプリを再起動してください。';
+    case 'initialization':
+      return 'アプリケーションの初期化に失敗しました。アプリを再起動してください。';
 
-  default:
-    return baseMessage.length > 100 ? baseMessage.substring(0, 100) + '...' : baseMessage;
+    default:
+      return baseMessage.length > 100 ? baseMessage.substring(0, 100) + '...' : baseMessage;
   }
 }
 
@@ -2101,39 +2101,39 @@ function getHumanReadableError(error, errorType) {
  */
 function getErrorSuggestions(errorType) {
   switch (errorType) {
-  case 'permission':
-    return [
-      'システム環境設定を開いて、プライバシーとセキュリティからスクリーン録画権限を許可',
-      'アプリを再起動して権限を再確認',
-    ];
+    case 'permission':
+      return [
+        'システム環境設定を開いて、プライバシーとセキュリティからスクリーン録画権限を許可',
+        'アプリを再起動して権限を再確認',
+      ];
 
-  case 'api_key':
-    return [
-      '設定画面からDeepL APIキーを正しく入力',
-      'DeepLのアカウント情報とAPIキーの有効性を確認',
-    ];
+    case 'api_key':
+      return [
+        '設定画面からDeepL APIキーを正しく入力',
+        'DeepLのアカウント情報とAPIキーの有効性を確認',
+      ];
 
-  case 'network':
-    return [
-      'インターネット接続を確認',
-      'ファイアウォール設定でアプリを許可',
-      'しばらく時間を置いてから再試行',
-    ];
+    case 'network':
+      return [
+        'インターネット接続を確認',
+        'ファイアウォール設定でアプリを許可',
+        'しばらく時間を置いてから再試行',
+      ];
 
-  case 'ocr':
-    return [
-      'より鮮明な画像や高解像度のスクリーンショットを使用',
-      '文字サイズが大きい範囲を選択',
-      '背景と文字のコントラストが高い範囲を選択',
-    ];
+    case 'ocr':
+      return [
+        'より鮮明な画像や高解像度のスクリーンショットを使用',
+        '文字サイズが大きい範囲を選択',
+        '背景と文字のコントラストが高い範囲を選択',
+      ];
 
-  case 'capture':
-    return ['スクリーンキャプチャの権限を再確認', 'アプリを再起動'];
+    case 'capture':
+      return ['スクリーンキャプチャの権限を再確認', 'アプリを再起動'];
 
-  case 'translation':
-    return ['DeepL APIの使用量を確認', 'APIキーの有効性を確認', 'しばらく時間を置いてから再試行'];
+    case 'translation':
+      return ['DeepL APIの使用量を確認', 'APIキーの有効性を確認', 'しばらく時間を置いてから再試行'];
 
-  default:
-    return ['アプリを再起動してみてください', '問題が続く場合はサポートにお問い合わせください'];
+    default:
+      return ['アプリを再起動してみてください', '問題が続く場合はサポートにお問い合わせください'];
   }
 }

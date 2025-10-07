@@ -35,6 +35,25 @@ class SettingsManager {
       sourceLanguage: document.getElementById('source-language'),
       targetLanguage: document.getElementById('target-language'),
 
+      // OCR elements
+      ocrLanguagesGroup: document.getElementById('ocr-languages-group'),
+      ocrConfidence: document.getElementById('ocr-confidence'),
+      ocrConfidenceValue: document.getElementById('ocr-confidence-value'),
+      ocrPsm: document.getElementById('ocr-psm'),
+
+      // HUD elements
+      hudTheme: document.getElementById('hud-theme'),
+      hudWidth: document.getElementById('hud-width'),
+      hudHeight: document.getElementById('hud-height'),
+      hudOpacity: document.getElementById('hud-opacity'),
+      hudOpacityValue: document.getElementById('hud-opacity-value'),
+      autoHideDuration: document.getElementById('auto-hide-duration'),
+      autoHideDurationValue: document.getElementById('auto-hide-duration-value'),
+      hudPositionRadios: document.querySelectorAll('input[name="hud-position"]'),
+      fixedPositionControls: document.getElementById('fixed-position-controls'),
+      hudX: document.getElementById('hud-x'),
+      hudY: document.getElementById('hud-y'),
+
       // Action buttons
       testApiBtn: document.getElementById('test-api'),
       saveSettingsBtn: document.getElementById('save-settings'),
@@ -96,6 +115,63 @@ class SettingsManager {
       this.onSettingsChange();
     });
 
+    // OCR settings handlers
+    const ocrCheckboxes = this.elements.ocrLanguagesGroup.querySelectorAll('input[type="checkbox"]');
+    ocrCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        this.onSettingsChange();
+      });
+    });
+
+    this.elements.ocrConfidence.addEventListener('input', (e) => {
+      this.elements.ocrConfidenceValue.textContent = e.target.value;
+      this.onSettingsChange();
+    });
+
+    this.elements.ocrPsm.addEventListener('change', () => {
+      this.onSettingsChange();
+    });
+
+    // HUD settings handlers
+    this.elements.hudTheme.addEventListener('change', () => {
+      this.onSettingsChange();
+    });
+
+    this.elements.hudWidth.addEventListener('input', () => {
+      this.onSettingsChange();
+    });
+
+    this.elements.hudHeight.addEventListener('input', () => {
+      this.onSettingsChange();
+    });
+
+    this.elements.hudOpacity.addEventListener('input', (e) => {
+      const percentage = Math.round(e.target.value * 100);
+      this.elements.hudOpacityValue.textContent = percentage;
+      this.onSettingsChange();
+    });
+
+    this.elements.autoHideDuration.addEventListener('input', (e) => {
+      this.elements.autoHideDurationValue.textContent = e.target.value;
+      this.onSettingsChange();
+    });
+
+    // HUD position handlers
+    this.elements.hudPositionRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        this.updateFixedPositionControls();
+        this.onSettingsChange();
+      });
+    });
+
+    this.elements.hudX.addEventListener('input', () => {
+      this.onSettingsChange();
+    });
+
+    this.elements.hudY.addEventListener('input', () => {
+      this.onSettingsChange();
+    });
+
     // Window events
     window.addEventListener('beforeunload', () => {
       this.cleanup();
@@ -146,6 +222,55 @@ class SettingsManager {
     if (settings.translation) {
       this.elements.sourceLanguage.value = settings.translation.sourceLanguage || 'auto';
       this.elements.targetLanguage.value = settings.translation.targetLanguage || 'ja';
+    }
+
+    // Update OCR settings
+    if (settings.ocr) {
+      // Update OCR language checkboxes
+      const ocrLanguages = settings.ocr.languages || ['eng', 'jpn'];
+      const checkboxes = this.elements.ocrLanguagesGroup.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = ocrLanguages.includes(checkbox.value);
+      });
+
+      // Update confidence threshold
+      const confidence = settings.ocr.confidenceThreshold || 60;
+      this.elements.ocrConfidence.value = confidence;
+      this.elements.ocrConfidenceValue.textContent = confidence;
+
+      // Update PSM
+      this.elements.ocrPsm.value = settings.ocr.psm || 6;
+    }
+
+    // Update HUD settings
+    if (settings.hud) {
+      this.elements.hudTheme.value = settings.hud.theme || 'auto';
+      
+      const size = settings.hud.size || { width: 400, height: 300 };
+      this.elements.hudWidth.value = size.width;
+      this.elements.hudHeight.value = size.height;
+      
+      const opacity = settings.hud.opacity || 0.95;
+      this.elements.hudOpacity.value = opacity;
+      this.elements.hudOpacityValue.textContent = Math.round(opacity * 100);
+      
+      const autoHide = settings.hud.autoHideDuration || 15;
+      this.elements.autoHideDuration.value = autoHide;
+      this.elements.autoHideDurationValue.textContent = autoHide;
+
+      // Update position settings
+      const position = settings.hud.position || 'mouse';
+      this.elements.hudPositionRadios.forEach(radio => {
+        radio.checked = radio.value === position;
+      });
+
+      // Update fixed position values
+      if (settings.hud.fixedPosition) {
+        this.elements.hudX.value = settings.hud.fixedPosition.x || 100;
+        this.elements.hudY.value = settings.hud.fixedPosition.y || 100;
+      }
+
+      this.updateFixedPositionControls();
     }
 
     // Update API key status
@@ -246,12 +371,21 @@ class SettingsManager {
     try {
       this.showLoading(true, 'Saving settings...');
 
-      const settings = {
-        translation: {
-          sourceLanguage: this.elements.sourceLanguage.value,
-          targetLanguage: this.elements.targetLanguage.value,
-        },
-      };
+      // Collect all form data including new settings
+      const settings = this.collectFormData();
+
+      // Validate settings
+      if (settings.ocr.languages.length === 0) {
+        throw new Error('At least one OCR language must be selected');
+      }
+
+      if (settings.hud.size.width < 200 || settings.hud.size.width > 800) {
+        throw new Error('HUD width must be between 200 and 800 pixels');
+      }
+
+      if (settings.hud.size.height < 150 || settings.hud.size.height > 600) {
+        throw new Error('HUD height must be between 150 and 600 pixels');
+      }
 
       // Save settings via IPC
       await window.electronAPI.saveSettings(settings);
@@ -932,3 +1066,53 @@ if (originalSaveSettings) {
     await saveShortcutSettings();
   };
 }
+
+// Add methods to SettingsManager prototype for new functionality
+SettingsManager.prototype.updateFixedPositionControls = function() {
+  const selectedPosition = document.querySelector('input[name="hud-position"]:checked')?.value;
+  const fixedControls = this.elements.fixedPositionControls;
+
+  if (selectedPosition === 'fixed') {
+    fixedControls.style.display = 'block';
+  } else {
+    fixedControls.style.display = 'none';
+  }
+};
+
+SettingsManager.prototype.collectFormData = function() {
+  const data = {
+    translation: {
+      sourceLanguage: this.elements.sourceLanguage.value,
+      targetLanguage: this.elements.targetLanguage.value,
+    },
+    ocr: {
+      languages: [],
+      confidenceThreshold: parseInt(this.elements.ocrConfidence.value, 10),
+      psm: parseInt(this.elements.ocrPsm.value, 10),
+    },
+    hud: {
+      theme: this.elements.hudTheme.value,
+      size: {
+        width: parseInt(this.elements.hudWidth.value, 10),
+        height: parseInt(this.elements.hudHeight.value, 10),
+      },
+      opacity: parseFloat(this.elements.hudOpacity.value),
+      autoHideDuration: parseInt(this.elements.autoHideDuration.value, 10),
+      position: document.querySelector('input[name="hud-position"]:checked')?.value || 'mouse',
+    }
+  };
+
+  // Collect selected OCR languages
+  const ocrCheckboxes = this.elements.ocrLanguagesGroup.querySelectorAll('input[type="checkbox"]:checked');
+  data.ocr.languages = Array.from(ocrCheckboxes).map(cb => cb.value);
+
+  // Add fixed position if selected
+  if (data.hud.position === 'fixed') {
+    data.hud.fixedPosition = {
+      x: parseInt(this.elements.hudX.value, 10),
+      y: parseInt(this.elements.hudY.value, 10),
+    };
+  }
+
+  return data;
+};

@@ -16,22 +16,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @param {Object} options - 取得オプション
    * @returns {Promise<Object>} 履歴データ
    */
-  getTranslationHistory: (options = {}) =>
-    ipcRenderer.invoke('get-translation-history', options),
+  getTranslationHistory: (options = {}) => ipcRenderer.invoke('get-translation-history', options),
 
   /**
    * 翻訳履歴統計を取得
    * @returns {Promise<Object>} 統計データ
    */
-  getTranslationHistoryStats: () =>
-    ipcRenderer.invoke('get-translation-history-stats'),
+  getTranslationHistoryStats: () => ipcRenderer.invoke('get-translation-history-stats'),
 
   /**
    * 履歴設定を取得
    * @returns {Promise<Object>} 設定データ
    */
-  getTranslationHistorySettings: () =>
-    ipcRenderer.invoke('get-translation-history-settings'),
+  getTranslationHistorySettings: () => ipcRenderer.invoke('get-translation-history-settings'),
 
   // === 履歴検索 ===
 
@@ -51,16 +48,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @param {string} itemId - アイテムID
    * @returns {Promise<Object>} 結果
    */
-  toggleTranslationFavorite: (itemId) =>
-    ipcRenderer.invoke('toggle-translation-favorite', itemId),
+  toggleTranslationFavorite: (itemId) => ipcRenderer.invoke('toggle-translation-favorite', itemId),
 
   /**
    * 単一の履歴アイテムを削除
    * @param {string} itemId - アイテムID
    * @returns {Promise<Object>} 削除結果
    */
-  deleteTranslationHistory: (itemId) =>
-    ipcRenderer.invoke('delete-translation-history', itemId),
+  deleteTranslationHistory: (itemId) => ipcRenderer.invoke('delete-translation-history', itemId),
 
   /**
    * 複数の履歴アイテムを削除
@@ -85,8 +80,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @param {Array} items - エクスポートするアイテム
    * @returns {Promise<Object>} エクスポート結果
    */
-  exportTranslationHistory: (items) =>
-    ipcRenderer.invoke('export-translation-history', items),
+  exportTranslationHistory: (items) => ipcRenderer.invoke('export-translation-history', items),
 
   /**
    * 履歴をインポート
@@ -113,22 +107,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * 履歴ウィンドウを閉じる
    * @returns {Promise<void>}
    */
-  closeHistoryWindow: () =>
-    ipcRenderer.invoke('close-history-window'),
+  closeHistoryWindow: () => ipcRenderer.invoke('close-history-window'),
 
   /**
    * ウィンドウを最小化
    * @returns {Promise<void>}
    */
-  minimizeHistoryWindow: () =>
-    ipcRenderer.invoke('minimize-history-window'),
+  minimizeHistoryWindow: () => ipcRenderer.invoke('minimize-history-window'),
 
   /**
    * 設定ウィンドウを開く
    * @returns {Promise<void>}
    */
-  openSettings: () =>
-    ipcRenderer.invoke('open-settings'),
+  openSettings: () => ipcRenderer.invoke('open-settings'),
 
   // === その他のユーティリティ ===
 
@@ -136,31 +127,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * アプリバージョンを取得
    * @returns {Promise<string>} バージョン
    */
-  getAppVersion: () =>
-    ipcRenderer.invoke('get-app-version'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 
   /**
    * システム情報を取得
    * @returns {Promise<Object>} システム情報
    */
-  getSystemInfo: () =>
-    ipcRenderer.invoke('get-system-info'),
+  getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
 
   /**
    * ファイルを開くダイアログを表示
    * @param {Object} options - ダイアログオプション
    * @returns {Promise<Object>} 選択されたファイル情報
    */
-  showOpenFileDialog: (options) =>
-    ipcRenderer.invoke('show-open-file-dialog', options),
+  showOpenFileDialog: (options) => ipcRenderer.invoke('show-open-file-dialog', options),
 
   /**
    * ファイルを保存するダイアログを表示
    * @param {Object} options - ダイアログオプション
    * @returns {Promise<Object>} 保存先情報
    */
-  showSaveFileDialog: (options) =>
-    ipcRenderer.invoke('show-save-file-dialog', options),
+  showSaveFileDialog: (options) => ipcRenderer.invoke('show-save-file-dialog', options),
 
   // === イベントリスナー ===
 

@@ -92,7 +92,7 @@ class KeychainManager {
       const existingKey = await keytar.getPassword(this.serviceName, keyName);
       if (!existingKey) {
         this.logger.log(
-          `[KeychainManager] APIキー '${keyName}' は存在しないため削除をスキップしました`,
+          `[KeychainManager] APIキー '${keyName}' は存在しないため削除をスキップしました`
         );
         return true; // 存在しない場合も削除成功とみなす
       }

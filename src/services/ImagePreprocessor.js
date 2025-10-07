@@ -114,23 +114,23 @@ class ImagePreprocessor {
 
       // 5. 出力フォーマット設定
       switch (config.outputFormat.toLowerCase()) {
-      case 'png':
-        processor = processor.png({
-          quality: 100,
-          compressionLevel: 0, // 無圧縮（OCR精度優先）
-          palette: false, // フルカラー
-        });
-        break;
-      case 'jpg':
-      case 'jpeg':
-        processor = processor.jpeg({
-          quality: 95,
-          progressive: false,
-          mozjpeg: true,
-        });
-        break;
-      default:
-        processor = processor.png({ quality: 100 });
+        case 'png':
+          processor = processor.png({
+            quality: 100,
+            compressionLevel: 0, // 無圧縮（OCR精度優先）
+            palette: false, // フルカラー
+          });
+          break;
+        case 'jpg':
+        case 'jpeg':
+          processor = processor.jpeg({
+            quality: 95,
+            progressive: false,
+            mozjpeg: true,
+          });
+          break;
+        default:
+          processor = processor.png({ quality: 100 });
       }
 
       // 処理実行
@@ -141,7 +141,7 @@ class ImagePreprocessor {
       // 処理結果の確認
       const outputMetadata = await sharp(outputPath).metadata();
       console.log(
-        `Processed image: ${outputMetadata.width}x${outputMetadata.height}, ${outputMetadata.format}`,
+        `Processed image: ${outputMetadata.width}x${outputMetadata.height}, ${outputMetadata.format}`
       );
       console.log(`Processing completed in ${processingTime}ms`);
 
@@ -219,7 +219,7 @@ class ImagePreprocessor {
     try {
       const files = await fs.readdir(this.tempDir);
       const cleanupPromises = files.map((file) =>
-        this.cleanupTempFile(path.join(this.tempDir, file)),
+        this.cleanupTempFile(path.join(this.tempDir, file))
       );
       await Promise.all(cleanupPromises);
       console.log(`Cleaned up ${files.length} temp files`);

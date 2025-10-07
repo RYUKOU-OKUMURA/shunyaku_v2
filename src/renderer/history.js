@@ -105,26 +105,26 @@ function getDateRange(filter) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   switch (filter) {
-  case 'today':
-    return { start: today, end: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
+    case 'today':
+      return { start: today, end: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
 
-  case 'week': {
-    const weekStart = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-    return { start: weekStart, end: now };
-  }
+    case 'week': {
+      const weekStart = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return { start: weekStart, end: now };
+    }
 
-  case 'month': {
-    const monthStart = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    return { start: monthStart, end: now };
-  }
+    case 'month': {
+      const monthStart = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return { start: monthStart, end: now };
+    }
 
-  case 'year': {
-    const yearStart = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
-    return { start: yearStart, end: now };
-  }
+    case 'year': {
+      const yearStart = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
+      return { start: yearStart, end: now };
+    }
 
-  default:
-    return null;
+    default:
+      return null;
   }
 }
 
@@ -242,17 +242,18 @@ function applyFilters() {
   // テキスト検索
   if (state.searchQuery) {
     const query = state.searchQuery.toLowerCase();
-    filtered = filtered.filter(item =>
-      item.originalText.toLowerCase().includes(query) ||
-      item.translatedText.toLowerCase().includes(query),
+    filtered = filtered.filter(
+      (item) =>
+        item.originalText.toLowerCase().includes(query) ||
+        item.translatedText.toLowerCase().includes(query)
     );
   }
 
   // 言語フィルター
   if (state.filters.language) {
     const [source, target] = state.filters.language.split('-');
-    filtered = filtered.filter(item =>
-      item.sourceLanguage === source && item.targetLanguage === target,
+    filtered = filtered.filter(
+      (item) => item.sourceLanguage === source && item.targetLanguage === target
     );
   }
 
@@ -260,7 +261,7 @@ function applyFilters() {
   if (state.filters.date) {
     const dateRange = getDateRange(state.filters.date);
     if (dateRange) {
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const itemDate = new Date(item.timestamp);
         return itemDate >= dateRange.start && itemDate <= dateRange.end;
       });
@@ -270,9 +271,9 @@ function applyFilters() {
   // タイプフィルター
   if (state.filters.type) {
     if (state.filters.type === 'favorites') {
-      filtered = filtered.filter(item => item.favorite);
+      filtered = filtered.filter((item) => item.favorite);
     } else {
-      filtered = filtered.filter(item => item.triggerMethod === state.filters.type);
+      filtered = filtered.filter((item) => item.triggerMethod === state.filters.type);
     }
   }
 
@@ -323,18 +324,21 @@ function updateHeaderStats() {
  */
 function updateStatsDisplay(stats) {
   document.getElementById('total-translations').textContent = stats.totalTranslations || 0;
-  document.getElementById('most-used-source').textContent =
-    stats.mostUsedSourceLanguage ? getLanguageDisplayName(stats.mostUsedSourceLanguage) : '-';
-  document.getElementById('most-used-target').textContent =
-    stats.mostUsedTargetLanguage ? getLanguageDisplayName(stats.mostUsedTargetLanguage) : '-';
+  document.getElementById('most-used-source').textContent = stats.mostUsedSourceLanguage
+    ? getLanguageDisplayName(stats.mostUsedSourceLanguage)
+    : '-';
+  document.getElementById('most-used-target').textContent = stats.mostUsedTargetLanguage
+    ? getLanguageDisplayName(stats.mostUsedTargetLanguage)
+    : '-';
 
   // 平均信頼度を計算
   const confidenceScores = state.currentHistory
-    .map(item => item.confidence)
-    .filter(confidence => confidence !== null && confidence !== undefined);
+    .map((item) => item.confidence)
+    .filter((confidence) => confidence !== null && confidence !== undefined);
 
   if (confidenceScores.length > 0) {
-    const avgConfidence = confidenceScores.reduce((sum, confidence) => sum + confidence, 0) / confidenceScores.length;
+    const avgConfidence =
+      confidenceScores.reduce((sum, confidence) => sum + confidence, 0) / confidenceScores.length;
     document.getElementById('avg-confidence').textContent = `${Math.round(avgConfidence)}%`;
   } else {
     document.getElementById('avg-confidence').textContent = '-';
@@ -400,7 +404,7 @@ function updateHistoryDisplay() {
 
   // 履歴アイテムをレンダリング
   historyListElement.innerHTML = '';
-  pageItems.forEach(item => {
+  pageItems.forEach((item) => {
     const itemElement = createHistoryItemElement(item);
     historyListElement.appendChild(itemElement);
   });
@@ -581,10 +585,10 @@ function handleItemSelection(itemId, selected) {
 function handleSelectAll(selectAll) {
   const currentPageItems = state.filteredHistory.slice(
     (state.currentPage - 1) * state.itemsPerPage,
-    state.currentPage * state.itemsPerPage,
+    state.currentPage * state.itemsPerPage
   );
 
-  currentPageItems.forEach(item => {
+  currentPageItems.forEach((item) => {
     if (selectAll) {
       state.selectedItems.add(item.id);
     } else {
@@ -593,7 +597,7 @@ function handleSelectAll(selectAll) {
   });
 
   // すべてのアイテムチェックボックスを更新
-  document.querySelectorAll('.item-select').forEach(checkbox => {
+  document.querySelectorAll('.item-select').forEach((checkbox) => {
     const itemId = checkbox.closest('.history-item').getAttribute('data-id');
     checkbox.checked = state.selectedItems.has(itemId);
     handleItemSelection(itemId, checkbox.checked);
@@ -611,7 +615,7 @@ async function handleToggleFavorite(itemId) {
 
     if (result.success) {
       // 履歴データを更新
-      const item = state.currentHistory.find(item => item.id === itemId);
+      const item = state.currentHistory.find((item) => item.id === itemId);
       if (item) {
         item.favorite = result.favorite;
       }
@@ -634,7 +638,7 @@ async function handleToggleFavorite(itemId) {
 
       showStatusMessage(
         result.favorite ? 'Added to favorites' : 'Removed from favorites',
-        'success',
+        'success'
       );
     } else {
       throw new Error(result.error || 'Failed to toggle favorite');
@@ -665,17 +669,19 @@ async function handleDeleteItem(itemId) {
   const confirmed = await showConfirmationDialog(
     'Delete Translation',
     'Are you sure you want to delete this translation? This action cannot be undone.',
-    'Delete',
+    'Delete'
   );
 
-  if (!confirmed) {return;}
+  if (!confirmed) {
+    return;
+  }
 
   try {
     const result = await window.electronAPI.deleteTranslationHistory(itemId);
 
     if (result.success) {
       // 履歴データから削除
-      state.currentHistory = state.currentHistory.filter(item => item.id !== itemId);
+      state.currentHistory = state.currentHistory.filter((item) => item.id !== itemId);
       state.selectedItems.delete(itemId);
 
       applyFilters();
@@ -694,15 +700,19 @@ async function handleDeleteItem(itemId) {
  * 複数アイテム削除処理
  */
 async function handleDeleteSelected() {
-  if (state.selectedItems.size === 0) {return;}
+  if (state.selectedItems.size === 0) {
+    return;
+  }
 
   const confirmed = await showConfirmationDialog(
     'Delete Selected Translations',
     `Are you sure you want to delete ${state.selectedItems.size} translation(s)? This action cannot be undone.`,
-    'Delete All',
+    'Delete All'
   );
 
-  if (!confirmed) {return;}
+  if (!confirmed) {
+    return;
+  }
 
   try {
     const itemIds = Array.from(state.selectedItems);
@@ -711,14 +721,14 @@ async function handleDeleteSelected() {
     if (result.success) {
       // 履歴データから削除
       const deletedIds = new Set(itemIds);
-      state.currentHistory = state.currentHistory.filter(item => !deletedIds.has(item.id));
+      state.currentHistory = state.currentHistory.filter((item) => !deletedIds.has(item.id));
       state.selectedItems.clear();
 
       applyFilters();
       updateHeaderStats();
       showStatusMessage(
         `${result.deletedCount} translation${result.deletedCount !== 1 ? 's' : ''} deleted`,
-        'success',
+        'success'
       );
     } else {
       throw new Error(result.error || 'Failed to delete translations');
@@ -784,7 +794,7 @@ function handleClearFilters() {
 async function handleExport(selectedOnly = false) {
   try {
     const itemsToExport = selectedOnly
-      ? state.currentHistory.filter(item => state.selectedItems.has(item.id))
+      ? state.currentHistory.filter((item) => state.selectedItems.has(item.id))
       : state.currentHistory;
 
     if (itemsToExport.length === 0) {
@@ -797,7 +807,7 @@ async function handleExport(selectedOnly = false) {
     if (result.success) {
       showStatusMessage(
         `${itemsToExport.length} translation${itemsToExport.length !== 1 ? 's' : ''} exported to ${result.filePath}`,
-        'success',
+        'success'
       );
     } else {
       throw new Error(result.error || 'Export failed');
@@ -818,7 +828,9 @@ async function handleImport() {
 
     fileInput.onchange = async (event) => {
       const file = event.target.files[0];
-      if (!file) {return;}
+      if (!file) {
+        return;
+      }
 
       if (!file.name.endsWith('.json')) {
         showStatusMessage('Please select a JSON file', 'error');
@@ -835,7 +847,7 @@ async function handleImport() {
           await loadHistoryData(); // 履歴を再読み込み
           showStatusMessage(
             `${result.importedCount} translation${result.importedCount !== 1 ? 's' : ''} imported`,
-            'success',
+            'success'
           );
         } else {
           throw new Error(result.error || 'Import failed');
@@ -864,7 +876,9 @@ async function handleClearHistory(keepDays = null) {
     : `Are you sure you want to delete translations older than ${keepDays} days? This action cannot be undone.`;
 
   const confirmed = await showConfirmationDialog(title, message, 'Clear');
-  if (!confirmed) {return;}
+  if (!confirmed) {
+    return;
+  }
 
   try {
     const result = await window.electronAPI.clearTranslationHistory({
@@ -874,10 +888,7 @@ async function handleClearHistory(keepDays = null) {
 
     if (result.success) {
       await loadHistoryData(); // 履歴を再読み込み
-      showStatusMessage(
-        isAll ? 'All history cleared' : 'Old history cleared',
-        'success',
-      );
+      showStatusMessage(isAll ? 'All history cleared' : 'Old history cleared', 'success');
     } else {
       throw new Error(result.error || 'Failed to clear history');
     }

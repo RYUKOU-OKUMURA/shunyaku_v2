@@ -216,7 +216,7 @@ header h1 {
   user-select: none;
 }
 
-.checkbox-container input[type="checkbox"] {
+.checkbox-container input[type='checkbox'] {
   display: none;
 }
 
@@ -232,12 +232,12 @@ header h1 {
   transition: all 0.2s ease;
 }
 
-.checkbox-container input[type="checkbox"]:checked + .checkmark {
+.checkbox-container input[type='checkbox']:checked + .checkmark {
   background-color: #667eea;
   border-color: #667eea;
 }
 
-.checkbox-container input[type="checkbox"]:checked + .checkmark::after {
+.checkbox-container input[type='checkbox']:checked + .checkmark::after {
   content: '✓';
   color: white;
   font-size: 12px;
@@ -491,8 +491,12 @@ header h1 {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* === PAGINATION === */

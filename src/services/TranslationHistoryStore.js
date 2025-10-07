@@ -43,7 +43,14 @@ const HISTORY_SCHEMA = {
           items: { type: 'string' },
         },
       },
-      required: ['id', 'timestamp', 'originalText', 'translatedText', 'sourceLanguage', 'targetLanguage'],
+      required: [
+        'id',
+        'timestamp',
+        'originalText',
+        'translatedText',
+        'sourceLanguage',
+        'targetLanguage',
+      ],
     },
     default: [],
   },
@@ -146,12 +153,13 @@ class TranslationHistoryStore {
 
       // 重複チェック（同じ原文・訳文・言語ペアの最新5分以内の履歴をチェック）
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const isDuplicate = items.some(item =>
-        item.originalText === historyItem.originalText &&
-        item.translatedText === historyItem.translatedText &&
-        item.sourceLanguage === historyItem.sourceLanguage &&
-        item.targetLanguage === historyItem.targetLanguage &&
-        item.timestamp > fiveMinutesAgo,
+      const isDuplicate = items.some(
+        (item) =>
+          item.originalText === historyItem.originalText &&
+          item.translatedText === historyItem.translatedText &&
+          item.sourceLanguage === historyItem.sourceLanguage &&
+          item.targetLanguage === historyItem.targetLanguage &&
+          item.timestamp > fiveMinutesAgo
       );
 
       if (isDuplicate) {
@@ -174,7 +182,9 @@ class TranslationHistoryStore {
       // 統計を更新
       this.updateStats(historyItem);
 
-      console.log(`Translation history added: ${historyItem.id} (${historyItem.sourceLanguage} → ${historyItem.targetLanguage})`);
+      console.log(
+        `Translation history added: ${historyItem.id} (${historyItem.sourceLanguage} → ${historyItem.targetLanguage})`
+      );
 
       return historyItem.id;
     } catch (error) {
@@ -207,7 +217,7 @@ class TranslationHistoryStore {
 
       // お気に入りフィルター
       if (favoritesOnly) {
-        items = items.filter(item => item.favorite);
+        items = items.filter((item) => item.favorite);
       }
 
       // ソート
@@ -270,7 +280,7 @@ class TranslationHistoryStore {
       const searchQuery = caseSensitive ? query : query.toLowerCase();
       const items = this.store.get('items', []);
 
-      const filteredItems = items.filter(item => {
+      const filteredItems = items.filter((item) => {
         // 言語フィルター
         if (sourceLanguage && item.sourceLanguage !== sourceLanguage) {
           return false;
@@ -280,9 +290,11 @@ class TranslationHistoryStore {
         }
 
         // テキスト検索
-        return searchFields.some(field => {
+        return searchFields.some((field) => {
           const fieldValue = item[field];
-          if (!fieldValue) {return false;}
+          if (!fieldValue) {
+            return false;
+          }
 
           const searchText = caseSensitive ? fieldValue : fieldValue.toLowerCase();
           return searchText.includes(searchQuery);
@@ -307,7 +319,7 @@ class TranslationHistoryStore {
   deleteTranslation(id) {
     try {
       const items = this.store.get('items', []);
-      const itemIndex = items.findIndex(item => item.id === id);
+      const itemIndex = items.findIndex((item) => item.id === id);
 
       if (itemIndex === -1) {
         return false;
@@ -334,7 +346,7 @@ class TranslationHistoryStore {
       const items = this.store.get('items', []);
       const originalCount = items.length;
 
-      const filteredItems = items.filter(item => !ids.includes(item.id));
+      const filteredItems = items.filter((item) => !ids.includes(item.id));
       const deletedCount = originalCount - filteredItems.length;
 
       this.store.set('items', filteredItems);
@@ -365,7 +377,7 @@ class TranslationHistoryStore {
   toggleFavorite(id) {
     try {
       const items = this.store.get('items', []);
-      const item = items.find(item => item.id === id);
+      const item = items.find((item) => item.id === id);
 
       if (!item) {
         throw new Error(`Translation history not found: ${id}`);
@@ -397,7 +409,7 @@ class TranslationHistoryStore {
       if (keepFavorites || keepDays !== null) {
         const cutoffDate = keepDays ? new Date(Date.now() - keepDays * 24 * 60 * 60 * 1000) : null;
 
-        items = items.filter(item => {
+        items = items.filter((item) => {
           if (keepFavorites && item.favorite) {
             return true;
           }
@@ -510,17 +522,25 @@ class TranslationHistoryStore {
       const sourceLanguageCounts = {};
       const targetLanguageCounts = {};
 
-      items.forEach(item => {
-        sourceLanguageCounts[item.sourceLanguage] = (sourceLanguageCounts[item.sourceLanguage] || 0) + 1;
-        targetLanguageCounts[item.targetLanguage] = (targetLanguageCounts[item.targetLanguage] || 0) + 1;
+      items.forEach((item) => {
+        sourceLanguageCounts[item.sourceLanguage] =
+          (sourceLanguageCounts[item.sourceLanguage] || 0) + 1;
+        targetLanguageCounts[item.targetLanguage] =
+          (targetLanguageCounts[item.targetLanguage] || 0) + 1;
       });
 
       // 最多使用言語を特定
-      stats.mostUsedSourceLanguage = Object.entries(sourceLanguageCounts)
-        .reduce((a, b) => sourceLanguageCounts[a[0]] > sourceLanguageCounts[b[0]] ? a : b, ['', 0])[0] || null;
+      stats.mostUsedSourceLanguage =
+        Object.entries(sourceLanguageCounts).reduce(
+          (a, b) => (sourceLanguageCounts[a[0]] > sourceLanguageCounts[b[0]] ? a : b),
+          ['', 0]
+        )[0] || null;
 
-      stats.mostUsedTargetLanguage = Object.entries(targetLanguageCounts)
-        .reduce((a, b) => targetLanguageCounts[a[0]] > targetLanguageCounts[b[0]] ? a : b, ['', 0])[0] || null;
+      stats.mostUsedTargetLanguage =
+        Object.entries(targetLanguageCounts).reduce(
+          (a, b) => (targetLanguageCounts[a[0]] > targetLanguageCounts[b[0]] ? a : b),
+          ['', 0]
+        )[0] || null;
 
       this.store.set('stats', stats);
     } catch (error) {
@@ -543,7 +563,7 @@ class TranslationHistoryStore {
 
       // 最新のアイテムから統計を更新
       const latestItem = items.reduce((latest, item) =>
-        new Date(item.timestamp) > new Date(latest.timestamp) ? item : latest,
+        new Date(item.timestamp) > new Date(latest.timestamp) ? item : latest
       );
 
       this.updateStats(latestItem);
@@ -623,9 +643,9 @@ class TranslationHistoryStore {
       if (merge) {
         // 既存データとマージ
         const existingItems = this.store.get('items', []);
-        const existingIds = new Set(existingItems.map(item => item.id));
+        const existingIds = new Set(existingItems.map((item) => item.id));
 
-        const newItems = data.items.filter(item => !existingIds.has(item.id));
+        const newItems = data.items.filter((item) => !existingIds.has(item.id));
         const mergedItems = [...existingItems, ...newItems];
 
         // 件数制限を適用
