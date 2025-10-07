@@ -55,7 +55,7 @@ class TranslationService {
 
       if (!apiKey) {
         throw new Error(
-          'DeepL APIキーがKeychainに見つかりません。設定画面でAPIキーを入力してください。'
+          'DeepL APIキーがKeychainに見つかりません。設定画面でAPIキーを入力してください。',
         );
       }
 
@@ -146,7 +146,7 @@ class TranslationService {
           text,
           sourceLanguage,
           targetLanguage,
-          translationOptions
+          translationOptions,
         );
 
         const endTime = Date.now();
@@ -186,7 +186,7 @@ class TranslationService {
 
         // 指数バックオフでリトライ待機
         this.logger.warn(
-          `[TranslationService] 翻訳失敗（試行${attempt + 1}/${this.maxRetries + 1}）: ${error.message}, ${retryDelay}ms後にリトライします`
+          `[TranslationService] 翻訳失敗（試行${attempt + 1}/${this.maxRetries + 1}）: ${error.message}, ${retryDelay}ms後にリトライします`,
         );
 
         await this._sleep(retryDelay);
@@ -195,9 +195,22 @@ class TranslationService {
     }
 
     // すべてのリトライが失敗した場合
-    const errorMessage = `翻訳に失敗しました（${this.maxRetries + 1}回試行）: ${lastError?.message || '不明なエラー'}`;
-    this.logger.error(`[TranslationService] ${errorMessage}`, lastError);
-    throw new Error(errorMessage);
+    const errorAnalysis = this._analyzeTranslationError(lastError);
+    const enhancedError = new Error(errorAnalysis.userMessage);
+
+    // エラーオブジェクトに詳細情報を追加
+    enhancedError.type = errorAnalysis.type;
+    enhancedError.alternatives = errorAnalysis.alternatives;
+    enhancedError.technicalDetails = errorAnalysis.technicalDetails;
+    enhancedError.retryable = errorAnalysis.retryable;
+    enhancedError.severity = errorAnalysis.severity;
+    enhancedError.attempts = this.maxRetries + 1;
+
+    this.logger.error(
+      `[TranslationService] ${errorAnalysis.userMessage}（${this.maxRetries + 1}回試行）`,
+      lastError,
+    );
+    throw enhancedError;
   }
 
   /**
@@ -211,10 +224,15 @@ class TranslationService {
     const errorMessage = error.message?.toLowerCase() || '';
     const statusCode = error.statusCode || error.status;
 
+    // API制限エラーは特別扱い（456は月間制限、429は短期制限）
+    if (statusCode === 456) {
+      return false; // 月間制限に達した場合はリトライしない
+    }
+
     // リトライ可能な条件
     const retryableConditions = [
       // HTTP ステータスコード
-      statusCode === 429, // Too Many Requests
+      statusCode === 429, // Too Many Requests（短期制限、少し待てば回復）
       statusCode === 500, // Internal Server Error
       statusCode === 502, // Bad Gateway
       statusCode === 503, // Service Unavailable
@@ -230,6 +248,115 @@ class TranslationService {
     ];
 
     return retryableConditions.some((condition) => condition === true);
+  }
+
+  /**
+   * エラーを詳細分析し、ユーザー向けの詳しいガイダンスを生成
+   * @private
+   * @param {Error} error - 分析するエラー
+   * @returns {Object} 詳細なエラー情報
+   */
+  _analyzeTranslationError(error) {
+    const errorMessage = error.message?.toLowerCase() || '';
+    const statusCode = error.statusCode || error.status;
+
+    const errorInfo = {
+      type: 'unknown',
+      userMessage: '不明なエラーが発生しました',
+      alternatives: [],
+      technicalDetails: error.message,
+      retryable: false,
+      severity: 'error',
+    };
+
+    // API認証エラー
+    if (
+      statusCode === 401 ||
+      statusCode === 403 ||
+      errorMessage.includes('401') ||
+      errorMessage.includes('403')
+    ) {
+      errorInfo.type = 'auth';
+      errorInfo.userMessage = 'APIキーが無効または権限がありません';
+      errorInfo.alternatives = [
+        '設定画面でAPIキーを再確認してください',
+        'DeepL公式サイトでAPIキーの有効性を確認してください',
+        '無料プランの場合、月間使用量を超えていないか確認してください',
+      ];
+      errorInfo.severity = 'warning';
+    } else if (statusCode === 429) {
+    // API短期制限エラー（429）
+      errorInfo.type = 'rate_limit';
+      errorInfo.userMessage = 'APIリクエスト制限に達しました（短期間）';
+      errorInfo.alternatives = [
+        '少し時間をおいてから再試行してください（推奨: 30秒〜1分）',
+        'より短いテキストに分割して翻訳してください',
+        'DeepL Proプランにアップグレードすることで制限を緩和できます',
+      ];
+      errorInfo.retryable = true;
+      errorInfo.severity = 'warning';
+    } else if (statusCode === 456) {
+    // API月間制限エラー（456）
+      errorInfo.type = 'quota_exceeded';
+      errorInfo.userMessage = 'DeepL APIの月間文字数制限に達しました';
+      errorInfo.alternatives = [
+        '来月まで待つか、DeepL Proプランにアップグレードしてください',
+        'より短いテキストのみ翻訳するようにしてください',
+        '他の翻訳サービスの利用を検討してください',
+        'ローカル翻訳ツールの使用を検討してください',
+      ];
+      errorInfo.retryable = false;
+      errorInfo.severity = 'error';
+    } else if (
+      errorMessage.includes('timeout') ||
+      errorMessage.includes('enotfound') ||
+      errorMessage.includes('econnreset') ||
+      errorMessage.includes('etimedout') ||
+      errorMessage.includes('network error')
+    ) {
+      errorInfo.type = 'network';
+      errorInfo.userMessage = 'ネットワーク接続エラーが発生しました';
+      errorInfo.alternatives = [
+        'インターネット接続を確認してください',
+        'VPNやプロキシ設定を確認してください',
+        'ファイアウォール設定を確認してください',
+        'しばらく待ってから再試行してください',
+      ];
+      errorInfo.retryable = true;
+      errorInfo.severity = 'error';
+    } else if (statusCode >= 500 && statusCode < 600) {
+    // DeepLサーバーエラー（5xx）
+      errorInfo.type = 'server_error';
+      errorInfo.userMessage = 'DeepL APIサーバーでエラーが発生しています';
+      errorInfo.alternatives = [
+        'DeepLサーバーの一時的な問題の可能性があります',
+        '数分待ってから再試行してください',
+        'DeepLの公式ステータスページを確認してください',
+        '問題が継続する場合はDeepLサポートに問い合わせてください',
+      ];
+      errorInfo.retryable = true;
+      errorInfo.severity = 'warning';
+    } else if (
+      statusCode >= 400 &&
+      statusCode < 500 &&
+      statusCode !== 401 &&
+      statusCode !== 403 &&
+      statusCode !== 429 &&
+      statusCode !== 456
+    ) {
+      errorInfo.type = 'validation';
+      errorInfo.userMessage = '翻訳リクエストに問題があります';
+      errorInfo.alternatives = [
+        'テキストの内容を確認してください（特殊文字、長さなど）',
+        'より短いテキストに分割して試してください',
+        '言語設定を確認してください',
+        '文字エンコーディングに問題がないか確認してください',
+      ];
+      errorInfo.retryable = false;
+      errorInfo.severity = 'warning';
+    }
+
+    return errorInfo;
   }
 
   /**

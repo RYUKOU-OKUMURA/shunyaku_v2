@@ -193,9 +193,17 @@ class OCRService {
     } catch (error) {
       console.error('OCR process failed:', error);
 
+      const errorAnalysis = this._analyzeOCRError(error, startTime);
+
       return {
         success: false,
-        error: error.message,
+        error: errorAnalysis.userMessage,
+        errorType: errorAnalysis.type,
+        errorData: {
+          alternatives: errorAnalysis.alternatives,
+          severity: errorAnalysis.severity,
+          technicalDetails: error.message,
+        },
         text: '',
         confidence: 0,
         totalTime: Date.now() - startTime,
@@ -317,16 +325,16 @@ class OCRService {
 
       let processedPath;
       switch (preprocessingType) {
-        case 'high-quality':
-          processedPath = await this.imagePreprocessor.preprocessHighQuality(imagePath);
-          break;
-        case 'light':
-          processedPath = await this.imagePreprocessor.preprocessLight(imagePath);
-          break;
-        case 'standard':
-        default:
-          processedPath = await this.imagePreprocessor.preprocessStandard(imagePath);
-          break;
+      case 'high-quality':
+        processedPath = await this.imagePreprocessor.preprocessHighQuality(imagePath);
+        break;
+      case 'light':
+        processedPath = await this.imagePreprocessor.preprocessLight(imagePath);
+        break;
+      case 'standard':
+      default:
+        processedPath = await this.imagePreprocessor.preprocessStandard(imagePath);
+        break;
       }
 
       console.log(`Image preprocessed (${preprocessingType}): ${path.basename(processedPath)}`);
@@ -629,6 +637,130 @@ class OCRService {
       console.error('OCR execution check failed:', error);
       return 'failed';
     }
+  }
+
+  /**
+   * OCRエラーを詳細分析し、ユーザー向けの詳しいガイダンスを生成
+   * @private
+   * @param {Error} error - 分析するエラー
+   * @param {number} startTime - 処理開始時刻
+   * @returns {Object} 詳細なエラー情報
+   */
+  _analyzeOCRError(error, startTime) {
+    const errorMessage = error.message?.toLowerCase() || '';
+    const processingTime = Date.now() - startTime;
+
+    const errorInfo = {
+      type: 'ocr_failed',
+      userMessage: 'テキスト認識に失敗しました',
+      alternatives: [],
+      severity: 'warning',
+      processingTime: processingTime,
+    };
+
+    // ファイルアクセスエラー
+    if (errorMessage.includes('enoent') || errorMessage.includes('no such file')) {
+      errorInfo.type = 'file_not_found';
+      errorInfo.userMessage = '画像ファイルが見つかりません';
+      errorInfo.alternatives = [
+        'スクリーンキャプチャを再実行してください',
+        '手動でテキストを入力してください',
+      ];
+      errorInfo.severity = 'error';
+    }
+    // ファイル形式エラー
+    else if (errorMessage.includes('unsupported') || errorMessage.includes('format')) {
+      errorInfo.type = 'unsupported_format';
+      errorInfo.userMessage = 'サポートされていない画像形式です';
+      errorInfo.alternatives = [
+        'PNG、JPEG、BMP形式の画像を使用してください',
+        'スクリーンキャプチャを再実行してください',
+        '手動でテキストを入力してください',
+      ];
+      errorInfo.severity = 'warning';
+    }
+    // 画像が大きすぎる
+    else if (errorMessage.includes('too large') || errorMessage.includes('size')) {
+      errorInfo.type = 'file_too_large';
+      errorInfo.userMessage = '画像ファイルが大きすぎます';
+      errorInfo.alternatives = [
+        '小さな範囲を選択してキャプチャしてください',
+        '画像を縮小してください',
+        '手動でテキストを入力してください',
+      ];
+      errorInfo.severity = 'warning';
+    }
+    // 言語データエラー
+    else if (errorMessage.includes('language') || errorMessage.includes('tessdata')) {
+      errorInfo.type = 'language_data_error';
+      errorInfo.userMessage = 'OCR言語データに問題があります';
+      errorInfo.alternatives = [
+        'アプリを再起動してください',
+        '言語データの再ダウンロードを試してください',
+        '手動でテキストを入力してください',
+      ];
+      errorInfo.severity = 'error';
+    }
+    // Worker初期化エラー
+    else if (errorMessage.includes('worker') || errorMessage.includes('initialize')) {
+      errorInfo.type = 'worker_error';
+      errorInfo.userMessage = 'OCRエンジンの初期化に失敗しました';
+      errorInfo.alternatives = ['アプリを再起動してください', '手動でテキストを入力してください'];
+      errorInfo.severity = 'error';
+    }
+    // メモリ不足
+    else if (
+      errorMessage.includes('memory') ||
+      errorMessage.includes('out of') ||
+      errorMessage.includes('allocation')
+    ) {
+      errorInfo.type = 'memory_error';
+      errorInfo.userMessage = 'メモリ不足でOCR処理に失敗しました';
+      errorInfo.alternatives = [
+        '他のアプリを閉じてメモリを確保してください',
+        'より小さな範囲をキャプチャしてください',
+        'システムを再起動してください',
+        '手動でテキストを入力してください',
+      ];
+      errorInfo.severity = 'warning';
+    }
+    // タイムアウト
+    else if (errorMessage.includes('timeout') || processingTime > 60000) {
+      errorInfo.type = 'timeout';
+      errorInfo.userMessage = 'OCR処理がタイムアウトしました';
+      errorInfo.alternatives = [
+        'より小さな範囲をキャプチャしてください',
+        'より単純な画像を使用してください',
+        '手動でテキストを入力してください',
+      ];
+      errorInfo.severity = 'warning';
+    }
+    // 低品質画像（推定）
+    else if (errorMessage.includes('confidence') || errorMessage.includes('quality')) {
+      errorInfo.type = 'low_quality';
+      errorInfo.userMessage = '画像の品質が低すぎてテキスト認識できません';
+      errorInfo.alternatives = [
+        '画面の解像度を上げてください',
+        'より大きな文字サイズを使用してください',
+        '照明を改善してください',
+        '背景とのコントラストを上げてください',
+        '手動でテキストを入力してください',
+      ];
+      errorInfo.severity = 'info';
+    }
+    // 一般的なOCRエラー
+    else {
+      errorInfo.userMessage = 'テキスト認識処理中にエラーが発生しました';
+      errorInfo.alternatives = [
+        '画像の品質を確認してください（解像度、明度、コントラスト）',
+        '文字がはっきり見える範囲をキャプチャしてください',
+        'OCR処理を再試行してください',
+        '手動でテキストを入力してください',
+      ];
+      errorInfo.severity = 'warning';
+    }
+
+    return errorInfo;
   }
 }
 

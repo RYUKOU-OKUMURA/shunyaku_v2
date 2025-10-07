@@ -116,8 +116,9 @@ class SettingsManager {
     });
 
     // OCR settings handlers
-    const ocrCheckboxes = this.elements.ocrLanguagesGroup.querySelectorAll('input[type="checkbox"]');
-    ocrCheckboxes.forEach(checkbox => {
+    const ocrCheckboxes =
+      this.elements.ocrLanguagesGroup.querySelectorAll('input[type="checkbox"]');
+    ocrCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener('change', () => {
         this.onSettingsChange();
       });
@@ -157,7 +158,7 @@ class SettingsManager {
     });
 
     // HUD position handlers
-    this.elements.hudPositionRadios.forEach(radio => {
+    this.elements.hudPositionRadios.forEach((radio) => {
       radio.addEventListener('change', () => {
         this.updateFixedPositionControls();
         this.onSettingsChange();
@@ -229,7 +230,7 @@ class SettingsManager {
       // Update OCR language checkboxes
       const ocrLanguages = settings.ocr.languages || ['eng', 'jpn'];
       const checkboxes = this.elements.ocrLanguagesGroup.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach(checkbox => {
+      checkboxes.forEach((checkbox) => {
         checkbox.checked = ocrLanguages.includes(checkbox.value);
       });
 
@@ -245,22 +246,22 @@ class SettingsManager {
     // Update HUD settings
     if (settings.hud) {
       this.elements.hudTheme.value = settings.hud.theme || 'auto';
-      
+
       const size = settings.hud.size || { width: 400, height: 300 };
       this.elements.hudWidth.value = size.width;
       this.elements.hudHeight.value = size.height;
-      
+
       const opacity = settings.hud.opacity || 0.95;
       this.elements.hudOpacity.value = opacity;
       this.elements.hudOpacityValue.textContent = Math.round(opacity * 100);
-      
+
       const autoHide = settings.hud.autoHideDuration || 15;
       this.elements.autoHideDuration.value = autoHide;
       this.elements.autoHideDurationValue.textContent = autoHide;
 
       // Update position settings
       const position = settings.hud.position || 'mouse';
-      this.elements.hudPositionRadios.forEach(radio => {
+      this.elements.hudPositionRadios.forEach((radio) => {
         radio.checked = radio.value === position;
       });
 
@@ -1068,7 +1069,7 @@ if (originalSaveSettings) {
 }
 
 // Add methods to SettingsManager prototype for new functionality
-SettingsManager.prototype.updateFixedPositionControls = function() {
+SettingsManager.prototype.updateFixedPositionControls = function () {
   const selectedPosition = document.querySelector('input[name="hud-position"]:checked')?.value;
   const fixedControls = this.elements.fixedPositionControls;
 
@@ -1079,7 +1080,7 @@ SettingsManager.prototype.updateFixedPositionControls = function() {
   }
 };
 
-SettingsManager.prototype.collectFormData = function() {
+SettingsManager.prototype.collectFormData = function () {
   const data = {
     translation: {
       sourceLanguage: this.elements.sourceLanguage.value,
@@ -1099,12 +1100,14 @@ SettingsManager.prototype.collectFormData = function() {
       opacity: parseFloat(this.elements.hudOpacity.value),
       autoHideDuration: parseInt(this.elements.autoHideDuration.value, 10),
       position: document.querySelector('input[name="hud-position"]:checked')?.value || 'mouse',
-    }
+    },
   };
 
   // Collect selected OCR languages
-  const ocrCheckboxes = this.elements.ocrLanguagesGroup.querySelectorAll('input[type="checkbox"]:checked');
-  data.ocr.languages = Array.from(ocrCheckboxes).map(cb => cb.value);
+  const ocrCheckboxes = this.elements.ocrLanguagesGroup.querySelectorAll(
+    'input[type="checkbox"]:checked'
+  );
+  data.ocr.languages = Array.from(ocrCheckboxes).map((cb) => cb.value);
 
   // Add fixed position if selected
   if (data.hud.position === 'fixed') {

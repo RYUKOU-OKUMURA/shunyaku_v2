@@ -928,6 +928,269 @@ body {
   filter: drop-shadow(0 0 4px rgba(52, 152, 219, 0.3));
 }
 
+/* エラー代替案表示（タスク4.4.1） */
+.error-alternatives {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.alternatives-title {
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.alternatives-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.alternatives-list li {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.8);
+  position: relative;
+  padding-left: 16px;
+  padding-right: 8px;
+}
+
+.alternatives-list li:before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: bold;
+  font-size: 10px;
+}
+
+/* 追加のエラーアクションボタン */
+.error-actions .settings-btn {
+  padding: 8px 14px;
+  border: 1px solid rgba(52, 152, 219, 0.5);
+  border-radius: 6px;
+  background: rgba(52, 152, 219, 0.15);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.error-actions .settings-btn:hover {
+  background: rgba(52, 152, 219, 0.3);
+  border-color: rgba(52, 152, 219, 0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
+}
+
+.error-actions .manual-input-btn {
+  padding: 8px 14px;
+  border: 1px solid rgba(46, 204, 113, 0.5);
+  border-radius: 6px;
+  background: rgba(46, 204, 113, 0.15);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.error-actions .manual-input-btn:hover {
+  background: rgba(46, 204, 113, 0.3);
+  border-color: rgba(46, 204, 113, 0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(46, 204, 113, 0.2);
+}
+
+/* OCR失敗時のフォールバック通知（タスク4.4.2） */
+.ocr-fallback-notice {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  margin: 8px 0;
+  background: rgba(46, 204, 113, 0.1);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  position: relative;
+  overflow: hidden;
+}
+
+.ocr-fallback-notice::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+}
+
+.fallback-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.fallback-icon {
+  font-size: 16px;
+  filter: drop-shadow(0 0 4px rgba(46, 204, 113, 0.3));
+}
+
+.fallback-message {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.4;
+  margin-left: 24px;
+}
+
+/* ネットワーク状態インジケーター（タスク4.4.3） */
+.network-indicator {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.network-indicator.online {
+  background: rgba(46, 204, 113, 0.2);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.network-indicator.offline {
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.network-indicator.checking {
+  background: rgba(241, 196, 15, 0.2);
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  animation: networkPulse 1.5s infinite;
+}
+
+.network-icon {
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+@keyframes networkPulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* オフライン通知（タスク4.4.3） */
+.offline-notice {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(231, 76, 60, 0.95);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  min-width: 300px;
+  max-width: 400px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: offlineSlideIn 0.4s ease-out;
+}
+
+.offline-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.offline-icon {
+  font-size: 16px;
+  filter: drop-shadow(0 0 4px rgba(231, 76, 60, 0.5));
+}
+
+.offline-message {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.offline-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.check-connection-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+
+.check-connection-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes offlineSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 /* 新規翻訳ボタン */
 .new-translation-btn {
   background: rgba(230, 126, 34, 0.8);

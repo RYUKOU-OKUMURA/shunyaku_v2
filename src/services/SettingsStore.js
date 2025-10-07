@@ -27,7 +27,22 @@ const SETTINGS_SCHEMA = {
       // 翻訳元言語（自動検出の場合は 'auto'）
       sourceLanguage: {
         type: 'string',
-        enum: ['auto', 'en', 'ja', 'zh', 'ko', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'ar', 'nl', 'pl'],
+        enum: [
+          'auto',
+          'en',
+          'ja',
+          'zh',
+          'ko',
+          'fr',
+          'de',
+          'es',
+          'it',
+          'pt',
+          'ru',
+          'ar',
+          'nl',
+          'pl',
+        ],
         default: 'auto',
       },
     },

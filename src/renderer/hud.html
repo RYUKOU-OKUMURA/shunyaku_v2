@@ -99,6 +99,17 @@
               <div class="error-message" id="errorMessage">エラーメッセージ</div>
             </div>
           </div>
+
+          <!-- OCR失敗時の手動入力フォールバック（タスク4.4.2） -->
+          <div class="ocr-fallback-notice" id="ocrFallbackNotice" style="display: none">
+            <div class="fallback-header">
+              <span class="fallback-icon">✏️</span>
+              <span class="fallback-title">テキスト認識失敗 - 手動入力モード</span>
+            </div>
+            <div class="fallback-message">
+              画像からのテキスト認識に失敗しました。下記に直接テキストを入力してください。
+            </div>
+          </div>
         </div>
 
         <!-- 操作ボタンエリア -->
@@ -124,7 +135,27 @@
           <span class="status-text" id="statusText">準備完了</span>
         </div>
         <div class="status-indicator">
+          <!-- ネットワーク状態インジケーター（タスク4.4.3） -->
+          <div class="network-indicator" id="networkIndicator" title="ネットワーク状態">
+            <span class="network-icon" id="networkIcon">📶</span>
+          </div>
           <div class="indicator-dot ready" id="statusIndicator"></div>
+        </div>
+      </div>
+
+      <!-- オフライン通知（タスク4.4.3） -->
+      <div class="offline-notice" id="offlineNotice" style="display: none">
+        <div class="offline-header">
+          <span class="offline-icon">📵</span>
+          <span class="offline-title">オフライン状態</span>
+        </div>
+        <div class="offline-message">
+          インターネット接続がありません。翻訳機能は利用できませんが、手動入力は可能です。
+        </div>
+        <div class="offline-actions">
+          <button class="check-connection-btn" onclick="checkNetworkConnection()">
+            <span>🔄</span> 接続確認
+          </button>
         </div>
       </div>
     </div>

@@ -35,6 +35,14 @@
     errorMessage: document.getElementById('errorMessage'),
     retryBtn: document.getElementById('retryBtn'),
     newTranslationBtn: document.getElementById('newTranslationBtn'),
+
+    // OCR失敗時のフォールバック要素（タスク4.4.2）
+    ocrFallbackNotice: document.getElementById('ocrFallbackNotice'),
+
+    // ネットワーク状態関連の要素（タスク4.4.3）
+    networkIndicator: document.getElementById('networkIndicator'),
+    networkIcon: document.getElementById('networkIcon'),
+    offlineNotice: document.getElementById('offlineNotice'),
   };
 
   // 自動非表示機能の状態管理（タスク4.1）
@@ -42,11 +50,19 @@
   let isUserInteracting = false;
   const autoHideCleanupFunctions = [];
 
+  // ネットワーク状態管理（タスク4.4.3）
+  const networkStatus = {
+    isOnline: navigator.onLine || true,
+    lastChecked: Date.now(),
+    checkInProgress: false,
+  };
+
   // HUDの初期化
   function initializeHUD() {
     setupEventListeners();
     initializeManualTranslation();
     initializeAutoHide();
+    initializeNetworkMonitoring(); // タスク4.4.3
     updateStatus('ready', '準備完了');
     // eslint-disable-next-line no-console
     console.log('HUD initialized successfully');
@@ -259,24 +275,24 @@
     let statusMessage = '';
 
     switch (copyType) {
-      case 'original':
-        textToCopy = elements.originalText?.textContent || '';
-        statusMessage = '原文をコピー';
-        break;
-      case 'translated':
-        textToCopy = elements.translatedText?.textContent || '';
-        statusMessage = '翻訳文をコピー';
-        break;
-      case 'both': {
-        const original = elements.originalText?.textContent || '';
-        const translated = elements.translatedText?.textContent || '';
-        textToCopy = `原文: ${original}\n\n翻訳: ${translated}`;
-        statusMessage = '原文と翻訳をコピー';
-        break;
-      }
-      default:
-        textToCopy = elements.translatedText?.textContent || '';
-        statusMessage = 'コピー';
+    case 'original':
+      textToCopy = elements.originalText?.textContent || '';
+      statusMessage = '原文をコピー';
+      break;
+    case 'translated':
+      textToCopy = elements.translatedText?.textContent || '';
+      statusMessage = '翻訳文をコピー';
+      break;
+    case 'both': {
+      const original = elements.originalText?.textContent || '';
+      const translated = elements.translatedText?.textContent || '';
+      textToCopy = `原文: ${original}\n\n翻訳: ${translated}`;
+      statusMessage = '原文と翻訳をコピー';
+      break;
+    }
+    default:
+      textToCopy = elements.translatedText?.textContent || '';
+      statusMessage = 'コピー';
     }
 
     if (!textToCopy.trim()) {
@@ -482,6 +498,25 @@
       return;
     }
 
+    // ネットワーク状態をチェック（タスク4.4.3）
+    if (!networkStatus.isOnline && !navigator.onLine) {
+      showError(
+        'インターネット接続がありません。翻訳機能を使用するにはネットワーク接続が必要です。',
+        'network',
+        null,
+        {
+          alternatives: [
+            'Wi-Fiまたは有線接続を確認してください',
+            'モバイルデータ接続を確認してください',
+            'ネットワーク設定を確認してください',
+            '接続復旧後に再試行してください',
+          ],
+          severity: 'error',
+        },
+      );
+      return;
+    }
+
     try {
       // ローディング状態を表示
       showLoadingState();
@@ -491,24 +526,51 @@
       const response = await window.electronAPI.translateText(text, targetLanguage);
 
       if (response.success) {
-        // 翻訳成功
+        // 翻訳成功 - 再試行統計を更新
+        updateRetryStats('translation_success', true);
         showTranslationResult(response.result);
         updateStatus('ready', '翻訳完了');
       } else {
-        // 翻訳失敗
-        showError(response.error || '翻訳に失敗しました。', response.errorType);
+        // 翻訳失敗 - 詳細エラーデータがある場合はそれを使用
+        const errorData = response.errorData || null;
+
+        // 再試行統計を更新
+        updateRetryStats(response.errorType || 'unknown', false);
+
+        // ネットワークエラーの場合は特別処理
+        if (response.errorType === 'network') {
+          // ネットワーク状態を再チェック
+          const isOnline = await checkNetworkConnection();
+          if (!isOnline) {
+            showOfflineNotice();
+          }
+        }
+
+        showError(response.error || '翻訳に失敗しました。', response.errorType, null, errorData);
         updateStatus('error', 'エラーが発生しました');
       }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Translation error:', error);
-      showError('翻訳処理中にエラーが発生しました。');
+
+      // ネットワークエラーの可能性をチェック
+      const errorMessage = error.message?.toLowerCase() || '';
+      if (
+        errorMessage.includes('network') ||
+        errorMessage.includes('fetch') ||
+        errorMessage.includes('timeout')
+      ) {
+        checkNetworkConnection();
+        showError('ネットワークエラーが発生しました。接続を確認してください。', 'network');
+      } else {
+        showError('翻訳処理中にエラーが発生しました。');
+      }
       updateStatus('error', 'エラーが発生しました');
     }
   }
 
   // 手動入力モードを表示
-  function showManualInputMode() {
+  function showManualInputMode(clearInput = true) {
     if (elements.manualInputArea) {
       elements.manualInputArea.style.display = 'flex';
     }
@@ -519,16 +581,26 @@
       elements.actionButtons.style.display = 'none';
     }
 
-    // 入力欄をクリア
-    if (elements.manualTextInput) {
+    // 入力欄をクリア（オプション）
+    if (clearInput && elements.manualTextInput) {
       elements.manualTextInput.value = '';
-      elements.manualTextInput.focus();
+    }
+
+    // フォーカスを当てる
+    if (elements.manualTextInput) {
+      setTimeout(() => {
+        elements.manualTextInput.focus();
+      }, 100);
     }
 
     updateCharacterCount();
     updateTranslateButtonState();
     hideError();
-    updateStatus('ready', 'テキストを入力してください');
+
+    // OCRフォールバック通知が表示されていない場合のみステータス更新
+    if (!elements.ocrFallbackNotice || elements.ocrFallbackNotice.style.display === 'none') {
+      updateStatus('ready', 'テキストを入力してください');
+    }
   }
 
   // ローディング状態を表示（拡張機能付き）
@@ -699,56 +771,105 @@
   }
 
   // エラーを表示（拡張機能付き）
-  function showError(message, errorType = null, errorDetails = null) {
+  function showError(message, errorType = null, errorDetails = null, errorData = null) {
     if (!elements.errorDisplay || !elements.errorMessage) {
       return;
     }
 
     let displayMessage = message;
     let errorClass = 'error-error'; // デフォルトエラー
+    let alternatives = [];
 
-    // エラー種別に応じてユーザーフレンドリーなメッセージに変換
-    if (errorType) {
+    // 詳細なエラーデータがある場合（タスク4.4.1）
+    if (errorData && errorData.alternatives) {
+      alternatives = errorData.alternatives;
+      if (errorData.severity === 'warning') {
+        errorClass = 'error-warning';
+      } else if (errorData.severity === 'info') {
+        errorClass = 'error-info';
+      }
+    } else if (errorType) {
+    // 従来のエラー種別に応じた処理
       switch (errorType) {
-        case 'api_key':
-          displayMessage =
+      case 'auth':
+      case 'api_key':
+        displayMessage =
             'APIキーが設定されていないか、無効です。設定画面でAPIキーを確認してください。';
-          errorClass = 'error-warning';
-          break;
-        case 'quota_exceeded':
-          displayMessage =
-            'API使用量の上限に達しました。しばらく時間をおいてから再試行してください。';
-          errorClass = 'error-warning';
-          break;
-        case 'network':
-          displayMessage = 'ネットワークエラーです。インターネット接続を確認してください。';
-          errorClass = 'error-error';
-          break;
-        case 'validation':
-          displayMessage = '入力テキストに問題があります。内容を確認してください。';
-          errorClass = 'error-info';
-          break;
-        case 'ocr_failed':
-          displayMessage =
+        errorClass = 'error-warning';
+        alternatives = [
+          '設定画面でAPIキーを再確認してください',
+          'DeepL公式サイトでAPIキーの有効性を確認してください',
+        ];
+        break;
+      case 'rate_limit':
+        displayMessage =
+            'APIリクエスト制限に達しました。少し時間をおいてから再試行してください。';
+        errorClass = 'error-warning';
+        alternatives = [
+          '30秒〜1分待ってから再試行してください',
+          'より短いテキストに分割して翻訳してください',
+        ];
+        break;
+      case 'quota_exceeded':
+        displayMessage =
+            'API使用量の上限に達しました。来月まで待つか、プランのアップグレードを検討してください。';
+        errorClass = 'error-error';
+        alternatives = [
+          '来月まで待つか、DeepL Proプランにアップグレードしてください',
+          '他の翻訳サービスの利用を検討してください',
+        ];
+        break;
+      case 'network':
+        displayMessage = 'ネットワークエラーです。インターネット接続を確認してください。';
+        errorClass = 'error-error';
+        alternatives = [
+          'インターネット接続を確認してください',
+          'VPNやプロキシ設定を確認してください',
+          'しばらく待ってから再試行してください',
+        ];
+        break;
+      case 'server_error':
+        displayMessage = 'DeepL APIサーバーでエラーが発生しています。';
+        errorClass = 'error-warning';
+        alternatives = [
+          '数分待ってから再試行してください',
+          'DeepLの公式ステータスページを確認してください',
+        ];
+        break;
+      case 'validation':
+        displayMessage = '入力テキストに問題があります。内容を確認してください。';
+        errorClass = 'error-info';
+        alternatives = [
+          'テキストの内容を確認してください（特殊文字、長さなど）',
+          'より短いテキストに分割して試してください',
+        ];
+        break;
+      case 'ocr_failed':
+        displayMessage =
             'テキスト認識に失敗しました。画像が不鮮明または文字が小さすぎる可能性があります。';
-          errorClass = 'error-warning';
-          break;
-        case 'capture_failed':
-          displayMessage = 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
-          errorClass = 'error-error';
-          break;
+        errorClass = 'error-warning';
+        alternatives = ['画像の解像度を上げてみてください', '手動でテキストを入力してください'];
+        break;
+      case 'capture_failed':
+        displayMessage = 'スクリーンキャプチャに失敗しました。権限設定を確認してください。';
+        errorClass = 'error-error';
+        alternatives = [
+          'システム環境設定で画面録画権限を許可してください',
+          '手動でテキストを入力してください',
+        ];
+        break;
       }
     }
 
     // エラー表示の内容を構築
-    rebuildErrorDisplay(displayMessage, errorDetails, errorClass, errorType);
+    rebuildErrorDisplay(displayMessage, errorDetails, errorClass, errorType, alternatives);
 
     elements.errorDisplay.style.display = 'flex';
     hideLoading();
   }
 
   // エラー表示を再構築
-  function rebuildErrorDisplay(message, details, errorClass, errorType) {
+  function rebuildErrorDisplay(message, details, errorClass, errorType, alternatives = []) {
     const errorDisplay = elements.errorDisplay;
     if (!errorDisplay) {
       return;
@@ -776,13 +897,54 @@
       errorDisplay.appendChild(errorContent);
     }
 
+    // 代替案のHTMLを生成
+    let alternativesHTML = '';
+    if (alternatives.length > 0) {
+      alternativesHTML = `
+        <div class="error-alternatives">
+          <div class="alternatives-title">💡 解決方法:</div>
+          <ul class="alternatives-list">
+            ${alternatives.map((alt) => `<li>${alt}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    // 再試行ボタンの表示制御
+    const showRetryBtn = !['quota_exceeded'].includes(errorType);
+
     errorContent.innerHTML = `
       <div class="error-message">${message}</div>
       ${details ? `<div class="error-details">${details}</div>` : ''}
+      ${alternativesHTML}
       <div class="error-actions">
-        <button class="retry-btn" onclick="handleErrorRetry('${errorType || 'unknown'}')">
-          <span>🔄</span> 再試行
-        </button>
+        ${
+  showRetryBtn
+    ? `
+          <button class="retry-btn" onclick="handleErrorRetry('${errorType || 'unknown'}')">
+            <span>🔄</span> 再試行
+          </button>
+        `
+    : ''
+  }
+        ${
+  errorType === 'auth' || errorType === 'api_key'
+    ? `
+          <button class="settings-btn" onclick="handleOpenSettings()">
+            <span>⚙️</span> 設定を開く
+          </button>
+        `
+    : ''
+  }
+        ${
+  ['ocr_failed', 'capture_failed'].includes(errorType)
+    ? `
+          <button class="manual-input-btn" onclick="handleManualInputFallback()">
+            <span>✏️</span> 手動入力
+          </button>
+        `
+    : ''
+  }
         <button class="dismiss-error-btn" onclick="hideError()">
           <span>✕</span> 閉じる
         </button>
@@ -790,37 +952,252 @@
     `;
   }
 
-  // エラーリトライの処理
+  // エラーリトライの処理（タスク4.4.4で強化）
   function handleErrorRetry(errorType) {
     hideError();
 
+    // 再試行前の共通処理
+    updateStatus('processing', '再試行を準備中...');
+
     switch (errorType) {
-      case 'api_key':
-        // 設定画面を開く
-        if (window.electronAPI && window.electronAPI.openSettings) {
-          window.electronAPI.openSettings();
-        }
-        break;
-      case 'network':
-      case 'quota_exceeded':
-      case 'validation':
-        // 前回の翻訳を再実行
+    case 'auth':
+    case 'api_key':
+      // 設定画面を開く
+      handleOpenSettings();
+      break;
+
+    case 'rate_limit':
+      // API制限エラー - 適切な待機時間後に再試行
+      showRetryCountdown(30, '短期制限解除を待機中...', () => {
         refreshTranslation();
-        break;
-      case 'ocr_failed':
-      case 'capture_failed':
-        // 完全フローを再実行
-        if (window.HUD && window.HUD.executeFullWorkflow) {
-          window.HUD.executeFullWorkflow();
-        }
-        break;
-      default:
-        // デフォルトの再試行
-        if (elements.originalText?.textContent) {
+      });
+      break;
+
+    case 'server_error':
+      // サーバーエラー - 短い待機時間後に再試行
+      showRetryCountdown(5, 'サーバー回復を待機中...', () => {
+        refreshTranslation();
+      });
+      break;
+
+    case 'network':
+      // ネットワークエラー - 接続確認後に再試行
+      performNetworkRetry();
+      break;
+
+    case 'validation':
+      // バリデーションエラー - そのまま再実行
+      setTimeout(() => {
+        refreshTranslation();
+      }, 500);
+      break;
+
+    case 'ocr_failed':
+      // OCRエラー - 完全フロー再実行または手動入力フォールバック
+      performOCRRetry();
+      break;
+
+    case 'capture_failed':
+      // キャプチャエラー - 完全フロー再実行
+      performCaptureRetry();
+      break;
+
+    case 'file_not_found':
+    case 'file_too_large':
+    case 'unsupported_format':
+      // ファイル関連エラー - 新しいキャプチャが必要
+      performCaptureRetry();
+      break;
+
+    case 'memory_error':
+      // メモリエラー - 少し待ってからシンプルな再試行
+      showRetryCountdown(10, 'システム回復を待機中...', () => {
+        refreshTranslation();
+      });
+      break;
+
+    case 'timeout':
+      // タイムアウト - 少し待ってから再試行
+      showRetryCountdown(3, 'タイムアウト回復を待機中...', () => {
+        refreshTranslation();
+      });
+      break;
+
+    case 'quota_exceeded':
+      // 月間制限の場合は再試行しない
+      updateStatus('error', 'プランアップグレードまたは来月まで待機してください');
+      setTimeout(() => {
+        updateStatus('ready', '準備完了');
+      }, 3000);
+      break;
+
+    default:
+      // デフォルトの再試行
+      if (elements.originalText?.textContent) {
+        setTimeout(() => {
           refreshTranslation();
-        } else {
-          showManualInputMode();
+        }, 500);
+      } else {
+        showManualInputMode();
+      }
+    }
+  }
+
+  // カウントダウン付き再試行
+  function showRetryCountdown(seconds, message, onComplete) {
+    let remainingSeconds = seconds;
+
+    const updateCountdown = () => {
+      updateStatus('processing', `${message} (${remainingSeconds}秒)`);
+      remainingSeconds--;
+
+      if (remainingSeconds >= 0) {
+        setTimeout(updateCountdown, 1000);
+      } else {
+        onComplete();
+      }
+    };
+
+    updateCountdown();
+  }
+
+  // ネットワーク再試行の実行
+  async function performNetworkRetry() {
+    updateStatus('processing', 'ネットワーク接続を確認中...');
+
+    const isOnline = await checkNetworkConnection();
+
+    if (isOnline) {
+      updateStatus('processing', '接続が復旧しました。再試行中...');
+      setTimeout(() => {
+        refreshTranslation();
+      }, 1000);
+    } else {
+      updateStatus('error', 'ネットワーク接続を確認してください');
+      showOfflineNotice();
+      setTimeout(() => {
+        updateStatus('ready', '準備完了');
+      }, 3000);
+    }
+  }
+
+  // OCR再試行の実行
+  function performOCRRetry() {
+    // 完全フローがあるかチェック
+    if (window.HUD && window.HUD.executeFullWorkflow) {
+      updateStatus('processing', 'OCR処理を再試行中...');
+      setTimeout(() => {
+        window.HUD.executeFullWorkflow();
+      }, 1000);
+    } else {
+      // フォールバック: 手動入力モード
+      updateStatus('processing', '手動入力モードに切り替え中...');
+      setTimeout(() => {
+        handleManualInputFallback(true);
+      }, 1000);
+    }
+  }
+
+  // キャプチャ再試行の実行
+  function performCaptureRetry() {
+    if (window.HUD && window.HUD.executeFullWorkflow) {
+      updateStatus('processing', '新しいスクリーンキャプチャを実行中...');
+      setTimeout(() => {
+        window.HUD.executeFullWorkflow();
+      }, 1000);
+    } else {
+      updateStatus('error', 'キャプチャ機能が利用できません');
+      setTimeout(() => {
+        handleManualInputFallback(true);
+      }, 2000);
+    }
+  }
+
+  // 再試行統計（デバッグ用）
+  const retryStats = {
+    totalRetries: 0,
+    successfulRetries: 0,
+    failedRetries: 0,
+    errorTypes: {},
+  };
+
+  // 再試行統計を更新
+  function updateRetryStats(errorType, success = false) {
+    retryStats.totalRetries++;
+    if (success) {
+      retryStats.successfulRetries++;
+    } else {
+      retryStats.failedRetries++;
+    }
+
+    if (!retryStats.errorTypes[errorType]) {
+      retryStats.errorTypes[errorType] = 0;
+    }
+    retryStats.errorTypes[errorType]++;
+
+    console.log('Retry stats:', retryStats);
+  }
+
+  // 再試行統計を取得
+  function getRetryStats() {
+    return { ...retryStats };
+  }
+
+  // 設定画面を開く
+  function handleOpenSettings() {
+    if (window.electronAPI && window.electronAPI.openSettings) {
+      window.electronAPI.openSettings();
+    } else {
+      updateStatus('error', '設定画面を開けませんでした');
+    }
+  }
+
+  // 手動入力フォールバック（タスク4.4.2用）
+  function handleManualInputFallback(showNotice = true) {
+    hideError();
+    showManualInputMode();
+
+    // OCRフォールバック通知を表示
+    if (showNotice && elements.ocrFallbackNotice) {
+      elements.ocrFallbackNotice.style.display = 'flex';
+
+      // 5秒後に自動で非表示
+      setTimeout(() => {
+        if (elements.ocrFallbackNotice) {
+          elements.ocrFallbackNotice.style.display = 'none';
         }
+      }, 5000);
+    }
+
+    updateStatus('ready', '手動でテキストを入力してください');
+
+    // 入力欄にフォーカスを当てる
+    if (elements.manualTextInput) {
+      setTimeout(() => {
+        elements.manualTextInput.focus();
+      }, 100);
+    }
+  }
+
+  // OCRフォールバック専用の表示関数
+  function showOCRFallbackMode(errorData = null) {
+    // エラー情報がある場合は詳細を表示
+    if (errorData && errorData.alternatives) {
+      // 一時的にエラーを表示してから手動入力モードに切り替え
+      showError(
+        errorData.userMessage || 'テキスト認識に失敗しました',
+        'ocr_failed',
+        null,
+        errorData,
+      );
+
+      // 3秒後に手動入力モードに切り替え
+      setTimeout(() => {
+        handleManualInputFallback(true);
+      }, 3000);
+    } else {
+      // 直接手動入力モードに切り替え
+      handleManualInputFallback(true);
     }
   }
 
@@ -870,6 +1247,9 @@
       const response = await window.electronAPI.translateText(originalText, targetLanguage);
 
       if (response.success) {
+        // 再翻訳成功
+        updateRetryStats('refresh_success', true);
+
         // 翻訳結果を更新
         if (elements.translatedText) {
           // アニメーション付きで更新
@@ -882,7 +1262,11 @@
 
         updateStatus('ready', '再翻訳完了');
       } else {
-        showError(response.error || '再翻訳に失敗しました', response.errorType);
+        // 再翻訳失敗
+        updateRetryStats(response.errorType || 'refresh_failed', false);
+
+        const errorData = response.errorData || null;
+        showError(response.error || '再翻訳に失敗しました', response.errorType, null, errorData);
         updateStatus('error', '再翻訳エラー');
       }
     } catch (error) {
@@ -1147,6 +1531,149 @@
     hideAutoHideWarning();
   }
 
+  // ネットワーク監視の初期化（タスク4.4.3）
+  function initializeNetworkMonitoring() {
+    // 初期状態を設定
+    updateNetworkStatus(navigator.onLine);
+
+    // オンライン/オフラインイベントリスナー
+    window.addEventListener('online', () => {
+      console.log('Network status: online');
+      networkStatus.isOnline = true;
+      networkStatus.lastChecked = Date.now();
+      updateNetworkStatus(true);
+      hideOfflineNotice();
+    });
+
+    window.addEventListener('offline', () => {
+      console.log('Network status: offline');
+      networkStatus.isOnline = false;
+      networkStatus.lastChecked = Date.now();
+      updateNetworkStatus(false);
+      showOfflineNotice();
+    });
+
+    // 定期的にネットワーク状態をチェック（5分間隔）
+    setInterval(checkNetworkConnection, 5 * 60 * 1000);
+
+    // 初回のネットワーク接続テスト
+    setTimeout(checkNetworkConnection, 2000);
+  }
+
+  // ネットワーク状態の更新
+  function updateNetworkStatus(isOnline, isChecking = false) {
+    if (!elements.networkIndicator || !elements.networkIcon) {
+      return;
+    }
+
+    // クラスをリセット
+    elements.networkIndicator.className = 'network-indicator';
+
+    if (isChecking) {
+      elements.networkIndicator.classList.add('checking');
+      elements.networkIcon.textContent = '⏳';
+      elements.networkIndicator.title = 'ネットワーク状態を確認中...';
+    } else if (isOnline) {
+      elements.networkIndicator.classList.add('online');
+      elements.networkIcon.textContent = '📶';
+      elements.networkIndicator.title = 'オンライン - インターネット接続あり';
+    } else {
+      elements.networkIndicator.classList.add('offline');
+      elements.networkIcon.textContent = '📵';
+      elements.networkIndicator.title = 'オフライン - インターネット接続なし';
+    }
+  }
+
+  // ネットワーク接続をテスト
+  async function checkNetworkConnection() {
+    if (networkStatus.checkInProgress) {
+      return;
+    }
+
+    networkStatus.checkInProgress = true;
+    updateNetworkStatus(networkStatus.isOnline, true);
+
+    try {
+      // 複数のエンドポイントでテスト
+      const testUrls = [
+        'https://www.google.com/favicon.ico',
+        'https://api.deepl.com/v2/languages?auth_key=test', // DeepL API（認証は失敗するが接続はテストできる）
+        'https://httpbin.org/get',
+      ];
+
+      const testPromises = testUrls.map((url) =>
+        fetch(url, {
+          method: 'GET',
+          mode: 'no-cors',
+          cache: 'no-cache',
+          signal: AbortSignal.timeout(5000), // 5秒タイムアウト
+        }).catch(() => null),
+      );
+
+      const results = await Promise.allSettled(testPromises);
+      const hasConnection = results.some((result) => result.status === 'fulfilled');
+
+      networkStatus.isOnline = hasConnection;
+      networkStatus.lastChecked = Date.now();
+
+      updateNetworkStatus(hasConnection, false);
+
+      if (!hasConnection && !elements.offlineNotice.style.display.includes('block')) {
+        showOfflineNotice();
+      } else if (hasConnection && elements.offlineNotice.style.display.includes('block')) {
+        hideOfflineNotice();
+      }
+
+      console.log(`Network connection check: ${hasConnection ? 'online' : 'offline'}`);
+      return hasConnection;
+    } catch (error) {
+      console.warn('Network check failed:', error);
+      networkStatus.isOnline = false;
+      updateNetworkStatus(false, false);
+      showOfflineNotice();
+      return false;
+    } finally {
+      networkStatus.checkInProgress = false;
+    }
+  }
+
+  // オフライン通知を表示
+  function showOfflineNotice() {
+    if (elements.offlineNotice) {
+      elements.offlineNotice.style.display = 'block';
+
+      // アニメーション後に位置を調整
+      setTimeout(() => {
+        if (elements.offlineNotice) {
+          elements.offlineNotice.style.transform = 'translateX(-50%) translateY(0)';
+        }
+      }, 10);
+    }
+  }
+
+  // オフライン通知を非表示
+  function hideOfflineNotice() {
+    if (elements.offlineNotice) {
+      elements.offlineNotice.style.transform = 'translateX(-50%) translateY(-20px)';
+      elements.offlineNotice.style.opacity = '0';
+
+      setTimeout(() => {
+        if (elements.offlineNotice) {
+          elements.offlineNotice.style.display = 'none';
+          elements.offlineNotice.style.opacity = '1';
+        }
+      }, 300);
+    }
+  }
+
+  // ネットワーク状態を取得
+  function getNetworkStatus() {
+    return {
+      ...networkStatus,
+      navigatorOnline: navigator.onLine,
+    };
+  }
+
   // 外部から呼び出し可能な関数をグローバルに公開
   window.HUD = {
     updateTextContent,
@@ -1180,6 +1707,17 @@
   window.formatLanguageCode = formatLanguageCode;
   window.createCopyOptionsMenu = createCopyOptionsMenu;
   window.showTranslationResult = showTranslationResult;
+
+  // タスク4.4用のグローバル関数
+  window.handleOpenSettings = handleOpenSettings;
+  window.handleManualInputFallback = handleManualInputFallback;
+  window.showOCRFallbackMode = showOCRFallbackMode;
+  window.checkNetworkConnection = checkNetworkConnection;
+  window.getNetworkStatus = getNetworkStatus;
+  window.getRetryStats = getRetryStats;
+  window.performNetworkRetry = performNetworkRetry;
+  window.performOCRRetry = performOCRRetry;
+  window.performCaptureRetry = performCaptureRetry;
 
   // DOMが読み込まれたら初期化実行
   if (document.readyState === 'loading') {

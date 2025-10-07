@@ -104,64 +104,66 @@
         <!-- OCR Settings Section -->
         <section class="settings-section">
           <h2>OCR Settings</h2>
-          
+
           <div class="input-group">
             <label for="ocr-languages">OCR Languages</label>
             <div class="checkbox-group" id="ocr-languages-group">
               <div class="checkbox-item">
-                <input type="checkbox" id="ocr-lang-eng" name="ocr-languages" value="eng" checked>
+                <input type="checkbox" id="ocr-lang-eng" name="ocr-languages" value="eng" checked />
                 <label for="ocr-lang-eng">English</label>
               </div>
               <div class="checkbox-item">
-                <input type="checkbox" id="ocr-lang-jpn" name="ocr-languages" value="jpn" checked>
+                <input type="checkbox" id="ocr-lang-jpn" name="ocr-languages" value="jpn" checked />
                 <label for="ocr-lang-jpn">Japanese (日本語)</label>
               </div>
               <div class="checkbox-item">
-                <input type="checkbox" id="ocr-lang-kor" name="ocr-languages" value="kor">
+                <input type="checkbox" id="ocr-lang-kor" name="ocr-languages" value="kor" />
                 <label for="ocr-lang-kor">Korean (한국어)</label>
               </div>
               <div class="checkbox-item">
-                <input type="checkbox" id="ocr-lang-chi-sim" name="ocr-languages" value="chi_sim">
+                <input type="checkbox" id="ocr-lang-chi-sim" name="ocr-languages" value="chi_sim" />
                 <label for="ocr-lang-chi-sim">Chinese Simplified (简体中文)</label>
               </div>
               <div class="checkbox-item">
-                <input type="checkbox" id="ocr-lang-chi-tra" name="ocr-languages" value="chi_tra">
+                <input type="checkbox" id="ocr-lang-chi-tra" name="ocr-languages" value="chi_tra" />
                 <label for="ocr-lang-chi-tra">Chinese Traditional (繁體中文)</label>
               </div>
               <div class="checkbox-item">
-                <input type="checkbox" id="ocr-lang-fra" name="ocr-languages" value="fra">
+                <input type="checkbox" id="ocr-lang-fra" name="ocr-languages" value="fra" />
                 <label for="ocr-lang-fra">French (Français)</label>
               </div>
               <div class="checkbox-item">
-                <input type="checkbox" id="ocr-lang-deu" name="ocr-languages" value="deu">
+                <input type="checkbox" id="ocr-lang-deu" name="ocr-languages" value="deu" />
                 <label for="ocr-lang-deu">German (Deutsch)</label>
               </div>
               <div class="checkbox-item">
-                <input type="checkbox" id="ocr-lang-spa" name="ocr-languages" value="spa">
+                <input type="checkbox" id="ocr-lang-spa" name="ocr-languages" value="spa" />
                 <label for="ocr-lang-spa">Spanish (Español)</label>
               </div>
             </div>
-            <small class="input-hint">Select languages for OCR text recognition. More languages may reduce accuracy.</small>
+            <small class="input-hint"
+              >Select languages for OCR text recognition. More languages may reduce accuracy.</small
+            >
           </div>
 
           <div class="input-group">
             <label for="ocr-confidence">Confidence Threshold</label>
             <div class="range-input-container">
-              <input 
-                type="range" 
-                id="ocr-confidence" 
-                name="ocr-confidence" 
-                min="10" 
-                max="95" 
-                step="5" 
+              <input
+                type="range"
+                id="ocr-confidence"
+                name="ocr-confidence"
+                min="10"
+                max="95"
+                step="5"
                 value="60"
                 class="range-input"
               />
-              <div class="range-value">
-                <span id="ocr-confidence-value">60</span>%
-              </div>
+              <div class="range-value"><span id="ocr-confidence-value">60</span>%</div>
             </div>
-            <small class="input-hint">Minimum confidence level for OCR text recognition (10-95%)</small>
+            <small class="input-hint"
+              >Minimum confidence level for OCR text recognition (10-95%)</small
+            >
           </div>
 
           <div class="input-group">
@@ -279,13 +281,13 @@
             <div class="size-inputs">
               <div class="size-input-item">
                 <label for="hud-width">Width</label>
-                <input 
-                  type="number" 
-                  id="hud-width" 
-                  name="hud-width" 
-                  min="200" 
-                  max="800" 
-                  step="10" 
+                <input
+                  type="number"
+                  id="hud-width"
+                  name="hud-width"
+                  min="200"
+                  max="800"
+                  step="10"
                   value="400"
                   class="size-input"
                 />
@@ -293,38 +295,38 @@
               </div>
               <div class="size-input-item">
                 <label for="hud-height">Height</label>
-                <input 
-                  type="number" 
-                  id="hud-height" 
-                  name="hud-height" 
-                  min="150" 
-                  max="600" 
-                  step="10" 
+                <input
+                  type="number"
+                  id="hud-height"
+                  name="hud-height"
+                  min="150"
+                  max="600"
+                  step="10"
                   value="300"
                   class="size-input"
                 />
                 <span class="size-unit">px</span>
               </div>
             </div>
-            <small class="input-hint">HUD window dimensions (200-800px width, 150-600px height)</small>
+            <small class="input-hint"
+              >HUD window dimensions (200-800px width, 150-600px height)</small
+            >
           </div>
 
           <div class="input-group">
             <label for="hud-opacity">Opacity</label>
             <div class="range-input-container">
-              <input 
-                type="range" 
-                id="hud-opacity" 
-                name="hud-opacity" 
-                min="0.3" 
-                max="1.0" 
-                step="0.05" 
+              <input
+                type="range"
+                id="hud-opacity"
+                name="hud-opacity"
+                min="0.3"
+                max="1.0"
+                step="0.05"
                 value="0.95"
                 class="range-input"
               />
-              <div class="range-value">
-                <span id="hud-opacity-value">95</span>%
-              </div>
+              <div class="range-value"><span id="hud-opacity-value">95</span>%</div>
             </div>
             <small class="input-hint">HUD window transparency level (30-100%)</small>
           </div>
@@ -332,19 +334,17 @@
           <div class="input-group">
             <label for="auto-hide-duration">Auto Hide Duration</label>
             <div class="range-input-container">
-              <input 
-                type="range" 
-                id="auto-hide-duration" 
-                name="auto-hide-duration" 
-                min="0" 
-                max="60" 
-                step="5" 
+              <input
+                type="range"
+                id="auto-hide-duration"
+                name="auto-hide-duration"
+                min="0"
+                max="60"
+                step="5"
                 value="15"
                 class="range-input"
               />
-              <div class="range-value">
-                <span id="auto-hide-duration-value">15</span>s
-              </div>
+              <div class="range-value"><span id="auto-hide-duration-value">15</span>s</div>
             </div>
             <small class="input-hint">Auto hide HUD after specified seconds (0 = never hide)</small>
           </div>
@@ -353,28 +353,44 @@
             <label>HUD Position</label>
             <div class="radio-group">
               <div class="radio-item">
-                <input type="radio" id="position-mouse" name="hud-position" value="mouse" checked>
+                <input type="radio" id="position-mouse" name="hud-position" value="mouse" checked />
                 <label for="position-mouse">Near mouse cursor</label>
               </div>
               <div class="radio-item">
-                <input type="radio" id="position-center" name="hud-position" value="center">
+                <input type="radio" id="position-center" name="hud-position" value="center" />
                 <label for="position-center">Screen center</label>
               </div>
               <div class="radio-item">
-                <input type="radio" id="position-fixed" name="hud-position" value="fixed">
+                <input type="radio" id="position-fixed" name="hud-position" value="fixed" />
                 <label for="position-fixed">Fixed position</label>
               </div>
             </div>
-            <div id="fixed-position-controls" class="fixed-position-controls" style="display: none;">
+            <div id="fixed-position-controls" class="fixed-position-controls" style="display: none">
               <div class="position-inputs">
                 <div class="position-input-item">
                   <label for="hud-x">X Position</label>
-                  <input type="number" id="hud-x" name="hud-x" min="0" step="10" value="100" class="position-input" />
+                  <input
+                    type="number"
+                    id="hud-x"
+                    name="hud-x"
+                    min="0"
+                    step="10"
+                    value="100"
+                    class="position-input"
+                  />
                   <span class="position-unit">px</span>
                 </div>
                 <div class="position-input-item">
                   <label for="hud-y">Y Position</label>
-                  <input type="number" id="hud-y" name="hud-y" min="0" step="10" value="100" class="position-input" />
+                  <input
+                    type="number"
+                    id="hud-y"
+                    name="hud-y"
+                    min="0"
+                    step="10"
+                    value="100"
+                    class="position-input"
+                  />
                   <span class="position-unit">px</span>
                 </div>
               </div>

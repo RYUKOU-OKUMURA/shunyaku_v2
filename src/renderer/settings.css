@@ -612,7 +612,7 @@ select:focus {
   gap: 8px;
 }
 
-.checkbox-item input[type="checkbox"] {
+.checkbox-item input[type='checkbox'] {
   width: auto;
   margin: 0;
   accent-color: #667eea;
@@ -739,7 +739,7 @@ select:focus {
   gap: 8px;
 }
 
-.radio-item input[type="radio"] {
+.radio-item input[type='radio'] {
   width: auto;
   margin: 0;
   accent-color: #667eea;
@@ -790,13 +790,13 @@ select:focus {
 }
 
 /* Number Input Arrows */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-input[type="number"] {
+input[type='number'] {
   -moz-appearance: textfield;
 }
 
@@ -806,27 +806,27 @@ input[type="number"] {
     margin: 10px;
     border-radius: 12px;
   }
-  
+
   .settings-main {
     padding: 16px 20px;
   }
-  
+
   .checkbox-group {
     grid-template-columns: 1fr;
   }
-  
+
   .size-inputs,
   .position-inputs {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .range-input-container {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
   }
-  
+
   .range-value {
     text-align: left;
   }
