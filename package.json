@@ -24,7 +24,12 @@
     "build:dmg": "electron-builder --mac --publish=never",
     "build:script": "./scripts/build-dmg.sh",
     "build:ci": "./scripts/build-ci.sh",
-    "dist": "npm run build:dmg"
+    "dist": "npm run build:dmg",
+    "sign": "./scripts/codesign.sh",
+    "notarize": "./scripts/notarize.sh",
+    "verify-signing": "./scripts/verify-notarization.sh",
+    "test-dmg": "./scripts/test-signed-dmg.sh",
+    "release:prepare": "./scripts/full-signing-process.sh"
   },
   "keywords": [
     "electron",
@@ -40,6 +45,7 @@
     "@playwright/test": "^1.56.0",
     "electron": "^27.0.0",
     "electron-builder": "^26.0.12",
+    "electron-notarize": "^1.2.2",
     "eslint": "^8.57.0",
     "husky": "^8.0.0",
     "jest": "^29.7.0",
@@ -76,6 +82,7 @@
       "entitlements": "assets/entitlements.mac.plist",
       "entitlementsInherit": "assets/entitlements.mac.plist"
     },
+    "afterSign": "scripts/notarize.js",
     "dmg": {
       "title": "Shunyaku v2 Installer",
       "format": "ULFO",

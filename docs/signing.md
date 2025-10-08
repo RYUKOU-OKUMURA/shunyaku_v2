@@ -268,9 +268,46 @@ productbuild --component "dist/mac/Shunyaku v2.app" /Applications \
 
 ## 7. 自動化
 
-### 7.1 ビルドスクリプト
+### 7.1 署名・公証スクリプト（推奨）
+
+#### 完全自動化スクリプト
 ```bash
-# scripts/build-and-sign.sh
+# 全プロセスを一括実行
+./scripts/full-signing-process.sh
+
+# 公証スキップ版
+SKIP_NOTARIZATION=true ./scripts/full-signing-process.sh
+```
+
+#### 個別実行
+```bash
+# 1. コード署名のみ
+./scripts/codesign.sh
+
+# 2. 公証のみ
+./scripts/notarize.sh
+
+# 3. 署名検証のみ
+./scripts/verify-notarization.sh
+
+# 4. DMGテストのみ
+./scripts/test-signed-dmg.sh
+```
+
+### 7.2 作成されたスクリプト一覧
+
+| スクリプト | 機能 | 用途 |
+|-----------|------|------|
+| `scripts/codesign.sh` | コード署名実行 | アプリケーションにDeveloper ID署名を適用 |
+| `scripts/notarize.sh` | 公証実行 | Apple公証サービスでの認証 |
+| `scripts/notarize.js` | electron-builder統合 | ビルドプロセス中の自動公証 |
+| `scripts/verify-notarization.sh` | 署名・公証検証 | stapler検証とGatekeeper確認 |
+| `scripts/test-signed-dmg.sh` | DMG動作テスト | 署名済みDMGの包括テスト |
+| `scripts/full-signing-process.sh` | 完全自動化 | ビルド→署名→公証→検証の全工程 |
+
+### 7.3 ビルドスクリプト
+```bash
+# scripts/build-and-sign.sh (レガシー)
 #!/bin/bash
 set -e
 
@@ -287,7 +324,79 @@ echo "✅ Build and signing complete!"
 echo "📦 Output: dist/mac/Shunyaku v2.app"
 ```
 
-### 7.2 GitHub Actions設定
+### 7.4 新スクリプトの詳細使用方法
+
+#### scripts/codesign.sh
+```bash
+# 基本実行
+./scripts/codesign.sh
+
+# 署名検証のみ
+./scripts/codesign.sh --verify
+
+# ヘルプ表示
+./scripts/codesign.sh --help
+
+# 環境変数での証明書指定
+DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAM_ID)" \
+./scripts/codesign.sh
+```
+
+#### scripts/notarize.sh
+```bash
+# 必須環境変数設定
+export NOTARIZE_API_KEY="XXXXXXXXXX"
+export NOTARIZE_API_ISSUER="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+export NOTARIZE_API_KEY_FILE="~/private_keys/AuthKey_XXXXXXXXXX.p8"
+
+# 公証実行
+./scripts/notarize.sh
+
+# 公証状態確認のみ
+./scripts/notarize.sh --verify
+```
+
+#### scripts/verify-notarization.sh
+```bash
+# 包括的検証
+./scripts/verify-notarization.sh
+
+# クイック検証
+./scripts/verify-notarization.sh --quick
+
+# Stapler検証のみ
+./scripts/verify-notarization.sh --stapler
+```
+
+#### scripts/test-signed-dmg.sh
+```bash
+# 包括的DMGテスト
+./scripts/test-signed-dmg.sh
+
+# クイックテスト
+./scripts/test-signed-dmg.sh --quick
+
+# マウントテストのみ
+./scripts/test-signed-dmg.sh --mount
+```
+
+#### scripts/full-signing-process.sh
+```bash
+# 完全自動実行（推奨）
+# 環境変数を設定してから実行
+export NOTARIZE_API_KEY="XXXXXXXXXX"
+export NOTARIZE_API_ISSUER="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  
+export NOTARIZE_API_KEY_FILE="~/private_keys/AuthKey_XXXXXXXXXX.p8"
+./scripts/full-signing-process.sh
+
+# 公証スキップ実行
+SKIP_NOTARIZATION=true ./scripts/full-signing-process.sh
+
+# 公証エラー時も継続
+CONTINUE_ON_NOTARIZE_ERROR=true ./scripts/full-signing-process.sh
+```
+
+### 7.5 GitHub Actions設定
 ```yaml
 # .github/workflows/build-mac.yml
 name: Build macOS
@@ -315,30 +424,34 @@ jobs:
         p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
         p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
         
-    - name: Build and Sign
+    - name: Build and Sign with Full Process
       env:
         NOTARIZE_API_KEY: ${{ secrets.NOTARIZE_API_KEY }}
         NOTARIZE_API_ISSUER: ${{ secrets.NOTARIZE_API_ISSUER }}
-      run: npm run build:mac
+        NOTARIZE_API_KEY_FILE: ${{ secrets.NOTARIZE_API_KEY_FILE }}
+      run: ./scripts/full-signing-process.sh
       
-    - name: Upload artifact
+    - name: Upload DMG
       uses: actions/upload-artifact@v3
       with:
-        name: Shunyaku-v2-mac
-        path: dist/mac/
+        name: Shunyaku-v2-dmg
+        path: dist/*.dmg
 ```
 
 ---
 
 ## 8. トラブルシューティング
 
-### 8.1 よくある問題
+### 8.1 よくある問題と解決策
 
 #### 問題1: 「xcrun: error: unable to find utility "notarytool"」
 ```bash
 # 解決: Xcode Command Line Tools更新
 sudo xcode-select --install
 sudo xcode-select --reset
+
+# macOSバージョン確認（notarytoolはmacOS 12.0+が必要）
+sw_vers -productVersion
 ```
 
 #### 問題2: 「The specified item could not be found in the keychain」
@@ -346,15 +459,59 @@ sudo xcode-select --reset
 # 解決: キーチェーン修復
 security unlock-keychain -p [パスワード] ~/Library/Keychains/login.keychain
 security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k [パスワード] ~/Library/Keychains/login.keychain
+
+# 証明書の再インストール
+./scripts/check-certificates.sh
 ```
 
 #### 問題3: 「App is damaged and can't be opened」
 ```bash
 # 解決: Gatekeeper属性削除
 sudo xattr -rd com.apple.quarantine "/path/to/Shunyaku v2.app"
+
+# 再署名が必要な場合
+./scripts/codesign.sh
 ```
 
-### 8.2 検証コマンド一覧
+#### 問題4: 公証が「Invalid」で失敗
+```bash
+# 公証ログを確認
+xcrun notarytool log [SUBMISSION_ID] \
+  --key-id "$NOTARIZE_API_KEY" \
+  --key "$NOTARIZE_API_KEY_FILE" \
+  --issuer "$NOTARIZE_API_ISSUER"
+
+# よくある原因と対策
+# 1. Hardened Runtimeが無効 → package.jsonで"hardenedRuntime": trueを確認
+# 2. Entitlementsが不適切 → assets/entitlements.mac.plistを確認  
+# 3. 未署名のバイナリ → 全てのバイナリがコード署名されているか確認
+```
+
+#### 問題5: electron-notarizeでエラー
+```bash
+# electron-notarizeの依存関係確認
+npm list electron-notarize
+
+# パッケージ更新
+npm install electron-notarize@latest
+
+# 手動公証に切り替え
+./scripts/notarize.sh
+```
+
+#### 問題6: DMGマウントエラー
+```bash
+# DMGファイル修復
+hdiutil verify "dist/Shunyaku-v2.dmg"
+
+# 再作成
+rm -f "dist/Shunyaku-v2.dmg"
+npm run build:dmg
+```
+
+### 8.2 デバッグ用検証コマンド一覧
+
+#### 基本検証
 ```bash
 # 署名確認
 codesign --verify --deep --strict --verbose=2 "Shunyaku v2.app"
@@ -363,10 +520,72 @@ codesign --verify --deep --strict --verbose=2 "Shunyaku v2.app"
 spctl --assess --verbose --type execute "Shunyaku v2.app"
 
 # ステープリング確認
-stapler validate "Shunyaku v2.app"
+xcrun stapler validate "Shunyaku v2.app"
 
 # 詳細情報表示
 codesign --display --verbose "Shunyaku v2.app"
+```
+
+#### 詳細診断
+```bash
+# Entitlements確認
+codesign --display --entitlements - "Shunyaku v2.app"
+
+# 署名階層表示  
+codesign --display --verbose=4 "Shunyaku v2.app"
+
+# 公証チケット確認
+codesign --display --verbose "Shunyaku v2.app" | grep -i ticket
+
+# quarantine属性確認
+xattr -l "Shunyaku v2.app"
+```
+
+#### システム状態確認
+```bash
+# 証明書一覧
+security find-identity -v -p codesigning
+
+# キーチェーン状態
+security list-keychains
+
+# システム情報
+sw_vers
+xcode-select -p
+xcrun --find codesign
+xcrun --find notarytool
+```
+
+### 8.3 自動化スクリプトのトラブルシューティング
+
+#### スクリプト実行権限エラー
+```bash
+# 実行権限付与
+chmod +x scripts/*.sh
+
+# 権限確認
+ls -la scripts/
+```
+
+#### 環境変数エラー
+```bash
+# 必須環境変数確認
+echo "API Key: ${NOTARIZE_API_KEY:-未設定}"
+echo "Issuer: ${NOTARIZE_API_ISSUER:-未設定}"
+echo "Key File: ${NOTARIZE_API_KEY_FILE:-未設定}"
+
+# APIキーファイル存在確認
+ls -la "${NOTARIZE_API_KEY_FILE}"
+```
+
+#### ログファイル確認
+```bash
+# スクリプトのログ出力をファイルに保存
+./scripts/full-signing-process.sh 2>&1 | tee signing-process.log
+
+# エラー詳細を確認
+grep -i error signing-process.log
+grep -i failed signing-process.log
 ```
 
 ---
@@ -378,21 +597,51 @@ codesign --display --verbose "Shunyaku v2.app"
 - [ ] Developer ID Application証明書取得済み
 - [ ] 証明書の有効期限確認済み（30日以上）
 - [ ] キーチェーンに証明書と秘密キーが存在
-- [ ] entitlements.mac.plist作成済み
+- [ ] assets/entitlements.mac.plist作成済み
+- [ ] 署名スクリプト実行権限確認済み (`chmod +x scripts/*.sh`)
+
+### 公証前チェックリスト  
+- [ ] App Store Connect APIキー取得済み
+- [ ] APIキーファイル(.p8)配置済み
+- [ ] 必須環境変数設定済み (NOTARIZE_API_KEY, NOTARIZE_API_ISSUER, NOTARIZE_API_KEY_FILE)
+- [ ] notarytoolコマンド利用可能 (macOS 12.0+)
+
+### 自動化実行チェックリスト
+- [ ] `./scripts/check-certificates.sh` で証明書確認済み
+- [ ] `npm install` で依存関係インストール済み  
+- [ ] `./scripts/full-signing-process.sh --help` でヘルプ確認済み
 
 ### 署名後チェックリスト
-- [ ] codesign --verify でエラーなし
-- [ ] spctl --assess でAccepted
-- [ ] 公証完了（notarytool）
-- [ ] stapler validateでエラーなし
-- [ ] 別のMacでアプリ起動確認
+- [ ] `./scripts/codesign.sh --verify` でエラーなし
+- [ ] `./scripts/verify-notarization.sh --quick` で通過
+- [ ] `spctl --assess --type execute` でAccepted
+- [ ] `xcrun stapler validate` でエラーなし
 
-### 配布前チェックリスト
-- [ ] DMG/PKGパッケージ作成完了
-- [ ] パッケージの署名確認
-- [ ] 第三者による動作確認
+### 公証後チェックリスト
+- [ ] notarytool で「status: Accepted」確認
+- [ ] stapler でチケット添付完了
+- [ ] Gatekeeper評価で通過
+- [ ] `./scripts/verify-notarization.sh` で全項目通過
+
+### DMG配布前チェックリスト
+- [ ] `./scripts/test-signed-dmg.sh` で全テスト通過
+- [ ] DMGマウント・アンマウント正常動作
+- [ ] DMG内アプリケーション署名確認
+- [ ] 別のMac環境でのインストールテスト完了
+- [ ] quarantine属性付きでの動作確認
+
+### 最終配布前チェックリスト
+- [ ] 全自動化スクリプト実行成功 (`./scripts/full-signing-process.sh`)
+- [ ] DMGファイルサイズ確認（適切な範囲内）
+- [ ] 第三者による動作確認完了
 - [ ] リリースノート作成
-- [ ] GitHub Releaseアップロード
+- [ ] GitHub Release作成・DMGアップロード完了
+
+### 継続メンテナンスチェックリスト
+- [ ] Apple Developer証明書の有効期限監視
+- [ ] App Store Connect APIキーの有効期限確認
+- [ ] macOS新バージョンでの動作確認
+- [ ] 署名・公証プロセスの定期テスト実行
 
 ---
 
