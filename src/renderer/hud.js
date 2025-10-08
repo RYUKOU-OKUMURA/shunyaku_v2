@@ -1824,7 +1824,9 @@
    * ネットワーク状態インジケーターの更新（タスク4.4.3）
    */
   function updateNetworkIndicator(isOnline) {
-    if (!elements.networkIcon) {return;}
+    if (!elements.networkIcon) {
+      return;
+    }
 
     networkStatus.isOnline = isOnline;
 
@@ -1847,7 +1849,9 @@
    * 再試行ボタンの状態更新（タスク4.4.4）
    */
   function updateRetryButtonState() {
-    if (!elements.retryBtn) {return;}
+    if (!elements.retryBtn) {
+      return;
+    }
 
     const canRetry =
       errorRecoveryState.canRetry && errorRecoveryState.retryCount < errorRecoveryState.maxRetries;

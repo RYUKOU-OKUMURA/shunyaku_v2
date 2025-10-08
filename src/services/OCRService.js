@@ -719,7 +719,7 @@ class OCRService {
       ];
       errorInfo.severity = 'warning';
     } else if (errorMessage.includes('timeout') || processingTime > 60000) {
-    // タイムアウト
+      // タイムアウト
       errorInfo.type = 'timeout';
       errorInfo.userMessage = 'OCR処理がタイムアウトしました';
       errorInfo.alternatives = [
@@ -729,7 +729,7 @@ class OCRService {
       ];
       errorInfo.severity = 'warning';
     } else if (errorMessage.includes('confidence') || errorMessage.includes('quality')) {
-    // 低品質画像（推定）
+      // 低品質画像（推定）
       errorInfo.type = 'low_quality';
       errorInfo.userMessage = '画像の品質が低すぎてテキスト認識できません';
       errorInfo.alternatives = [
