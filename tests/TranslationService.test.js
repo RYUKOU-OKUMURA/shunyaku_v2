@@ -256,7 +256,7 @@ describe('TranslationService', () => {
 
             await expect(translationService.translate('Hello', 'ja'))
                 .rejects
-                .toThrow('翻訳に失敗しました');
+                .toThrow('APIキーが無効または権限がありません');
 
             expect(mockTranslator.translateText).toHaveBeenCalledTimes(1);
         });
@@ -269,7 +269,7 @@ describe('TranslationService', () => {
 
             await expect(translationService.translate('Hello', 'ja'))
                 .rejects
-                .toThrow('翻訳に失敗しました（3回試行）');
+                .toThrow('DeepL APIサーバーでエラーが発生しています');
 
             expect(mockTranslator.translateText).toHaveBeenCalledTimes(3); // maxRetries + 1
         });

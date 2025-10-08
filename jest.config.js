@@ -15,6 +15,9 @@ module.exports = {
   testEnvironmentOptions: {
     customExportConditions: ['node', 'node-addons']
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(uuid)/)'
+  ],
   projects: [
     {
       displayName: 'node',
